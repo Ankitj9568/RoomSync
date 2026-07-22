@@ -119,7 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 e.preventDefault();
                 try {
                     await apiFetch('/api/auth/logout', { method: 'POST' });
-                    window.location.href = 'login.html';
+                    localStorage.removeItem('activeGroupId');
+                    localStorage.removeItem('userId');
+                    window.location.href = '/pages/login.html';
                 } catch (error) {
                     console.error('Logout failed', error);
                 }

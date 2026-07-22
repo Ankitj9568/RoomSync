@@ -74,7 +74,20 @@ async function apiFetch(endpoint, options = {}, silent = false) {
             
             // Redirect to login if unauthorized
             if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
-                window.location.href = 'login.html';
+                window.location.href = '/pages/login.html';
+                return;
+            }
+
+            // Handle stale group IDs
+            if (errorMsg === 'NOT_A_MEMBER' || response.status === 403) {
+                localStorage.removeItem('activeGroupId');
+                if (!window.location.pathname.includes('/pages/groups.html')) {
+                    window.location.href = '/pages/groups.html';
+                } else {
+                    window.location.reload();
+                }
+                // Don't throw, we are redirecting/reloading
+                return;
             }
             
             throw new Error(errorMsg);
