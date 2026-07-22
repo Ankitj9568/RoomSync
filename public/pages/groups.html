@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groups - RoomSync</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Navbar injected here -->
+    <div id="navbar-placeholder"></div>
+
+    <div class="page-container">
+        <h2 class="text-primary-custom mb-4">Manage Groups</h2>
+
+        <div class="row">
+            <!-- Left Column: Create & Join Group -->
+            <div class="col-md-5 mb-4">
+                
+                <!-- Create Group Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary-custom border-bottom pb-2"><i class="bi bi-plus-circle me-2"></i>Create New Group</h5>
+                        <form id="createGroupForm" class="mt-3">
+                            <div class="mb-3">
+                                <label class="form-label">Group Name</label>
+                                <input type="text" class="form-control" id="newGroupName" placeholder="e.g. Apt 4B" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Create Group</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Join Group Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary-custom border-bottom pb-2"><i class="bi bi-box-arrow-in-right me-2"></i>Join Existing Group</h5>
+                        <form id="joinGroupForm" class="mt-3">
+                            <div class="mb-3">
+                                <label class="form-label">Invite Code</label>
+                                <input type="text" class="form-control text-uppercase" id="joinGroupCode" placeholder="Enter 6-character code" required maxlength="6">
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary w-100">Join Group</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Active Group Details -->
+            <div class="col-md-7 mb-4">
+                
+                <!-- Members Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-0">
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <h5 class="card-title m-0 text-primary-custom"><i class="bi bi-people-fill me-2"></i>Group Members</h5>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                                <i class="bi bi-person-plus-fill"></i> Add
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Name</th>
+                                        <th>Role</th>
+                                        <th class="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="membersTableBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log Card -->
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary-custom border-bottom pb-2 mb-3"><i class="bi bi-clock-history me-2"></i>Recent Activity</h5>
+                        <div class="timeline" id="activityLogContainer">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Member to Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addMemberForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">User Email Address</label>
+                            <input type="email" class="form-control" id="addMemberEmail" required>
+                            <div class="form-text">The user must already be registered on RoomSync.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" id="addMemberRole">
+                                <option value="member" selected>Member</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/navbar.js"></script>
+    <script src="../js/groups.js"></script>
+</body>
+</html>

@@ -1,16 +1,16 @@
-const pool = require('../config/db');
+const db = require('../config/db');
 
 class ActivityLogModel {
     static async create(groupId, userId, action, description) {
-        const [result] = await pool.execute(
+        const result = await db.run(
             'INSERT INTO activity_logs (group_id, user_id, action, description) VALUES (?, ?, ?, ?)',
             [groupId, userId, action, description]
         );
-        return result.insertId;
+        return result.lastID;
     }
 
     static async getByGroupId(groupId, limit = 20) {
-        const [rows] = await pool.execute(
+        const rows = await db.all(
             `SELECT a.*, u.name as user_name 
              FROM activity_logs a 
              LEFT JOIN users u ON a.user_id = u.user_id 

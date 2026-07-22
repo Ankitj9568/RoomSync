@@ -27,7 +27,7 @@ const groceryController = {
 
     async addGrocery(req, res) {
         try {
-            const { group_id, item_name, quantity, amount, purchase_date } = req.body;
+            const { group_id, item_name, quantity, amount, purchase_date, contributors } = req.body;
             const userId = req.session.userId;
 
             if (!group_id || !item_name || !amount || !purchase_date) {
@@ -39,7 +39,13 @@ const groceryController = {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
 
-            const groceryId = await GroceryModel.addGrocery(group_id, item_name, quantity, amount, userId, purchase_date);
+            // contributors should be an array of {user_id, amount_paid}
+            let parsedContributors = [];
+            if (contributors && Array.isArray(contributors)) {
+                parsedContributors = contributors;
+            }
+
+            const groceryId = await GroceryModel.addGrocery(group_id, item_name, quantity, amount, userId, purchase_date, parsedContributors);
 
             // Log activity
             try {
@@ -47,7 +53,7 @@ const groceryController = {
                     group_id,
                     userId,
                     'GROCERY_LOGGED',
-                    `${req.session.userName} logged grocery "${item_name}" (₹ ${amount})`
+                    `${req.session.userName || 'Someone'} logged grocery "${item_name}" (₹ ${amount})`
                 );
             } catch (logErr) {
                 console.error("Failed to log activity:", logErr);

@@ -60,9 +60,32 @@ const navbarHTML = `
     <hr class="mt-3 mb-3 w-100 border-secondary opacity-25">
     <ul class="nav nav-pills flex-column w-100">
       <li class="nav-item">
+        <a class="nav-link" href="/pages/groups.html"><i class="bi bi-people me-3"></i> Manage Groups</a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link" href="/pages/settings.html"><i class="bi bi-gear me-3"></i> Settings</a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right me-3"></i> Logout</a>
+      </li>
     </ul>
+
+    <!-- User Profile & Group Selector -->
+    <div class="mt-auto border-top pt-3 w-100 px-2 pb-2">
+        <div class="d-flex align-items-center mb-3">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" id="navUserInitial">
+                ?
+            </div>
+            <div class="text-truncate">
+                <h6 class="mb-0 text-dark fw-bold text-truncate" id="navUserName">Loading...</h6>
+                <small class="text-muted-custom text-truncate" style="font-size: 0.75rem;" id="navUserEmail">...</small>
+            </div>
+        </div>
+        
+        <select class="form-select form-select-sm shadow-sm border-0 bg-light" id="navGroupSelect">
+            <option value="">Loading Groups...</option>
+        </select>
+    </div>
   </div>
 </div>
 `;
@@ -86,4 +109,84 @@ document.addEventListener("DOMContentLoaded", () => {
             link.classList.add('text-dark');
         }
     });
+    // Fetch User Data and Groups
+    if (navPlaceholder && typeof apiFetch !== 'undefined') {
+        loadUserProfile();
+        
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    await apiFetch('/api/auth/logout', { method: 'POST' });
+                    window.location.href = 'login.html';
+                } catch (error) {
+                    console.error('Logout failed', error);
+                }
+            });
+        }
+        
+        const groupSelect = document.getElementById('navGroupSelect');
+        if (groupSelect) {
+            groupSelect.addEventListener('change', (e) => {
+                setActiveGroupId(e.target.value);
+                // Dispatch event so page can reload its data
+                window.dispatchEvent(new Event('groupChanged'));
+            });
+        }
+    }
 });
+
+async function loadUserProfile() {
+    try {
+        const res = await apiFetch('/api/users/me', {}, true); // silent load
+        if (res.success && res.data) {
+            const user = res.data;
+            document.getElementById('navUserName').textContent = user.name;
+            document.getElementById('navUserEmail').textContent = user.email;
+            document.getElementById('navUserInitial').textContent = user.name.charAt(0).toUpperCase();
+            
+            // Now load groups
+            loadUserGroups();
+        }
+    } catch (error) {
+        console.error("Failed to load profile", error);
+    }
+}
+
+async function loadUserGroups() {
+    try {
+        const res = await apiFetch('/api/groups', {}, true);
+        const groupSelect = document.getElementById('navGroupSelect');
+        
+        if (res.success && res.data) {
+            groupSelect.innerHTML = '';
+            const groups = res.data;
+            
+            if (groups.length === 0) {
+                groupSelect.innerHTML = '<option value="">No Groups Found</option>';
+                return;
+            }
+            
+            let activeGroupId = getActiveGroupId();
+            
+            groups.forEach(group => {
+                const opt = document.createElement('option');
+                opt.value = group.id;
+                opt.textContent = group.name;
+                groupSelect.appendChild(opt);
+            });
+            
+            // Set active or default to first
+            if (!activeGroupId || !groups.find(g => g.id == activeGroupId)) {
+                activeGroupId = groups[0].id;
+                setActiveGroupId(activeGroupId);
+            }
+            
+            groupSelect.value = activeGroupId;
+            window.dispatchEvent(new Event('groupReady'));
+        }
+    } catch (error) {
+        console.error("Failed to load groups", error);
+    }
+}

@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 const PaymentModel = {
     async getPaymentsByGroup(groupId) {
-        const [rows] = await db.execute(`
+        const rows = await db.all(`
             SELECT p.payment_id, p.amount, p.payment_mode, p.note, p.payment_date,
                    p.paid_by, u1.name as paid_by_name,
                    p.paid_to, u2.name as paid_to_name
@@ -16,20 +16,20 @@ const PaymentModel = {
     },
 
     async getPaymentById(paymentId) {
-        const [rows] = await db.execute('SELECT * FROM payments WHERE payment_id = ?', [paymentId]);
+        const rows = await db.all('SELECT * FROM payments WHERE payment_id = ?', [paymentId]);
         return rows[0];
     },
 
     async addPayment(groupId, paidBy, paidTo, amount, paymentMode, note, paymentDate) {
-        const [result] = await db.execute(
+        const result = await db.run(
             'INSERT INTO payments (group_id, paid_by, paid_to, amount, payment_mode, note, payment_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [groupId, paidBy, paidTo, amount, paymentMode, note || null, paymentDate]
         );
-        return result.insertId;
+        return result.lastID;
     },
 
     async deletePayment(paymentId) {
-        await db.execute('DELETE FROM payments WHERE payment_id = ?', [paymentId]);
+        await db.run('DELETE FROM payments WHERE payment_id = ?', [paymentId]);
     }
 };
 

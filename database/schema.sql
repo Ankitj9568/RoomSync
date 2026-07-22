@@ -1,127 +1,134 @@
-CREATE DATABASE IF NOT EXISTS roomsync;
-USE roomsync;
-
-CREATE TABLE users (
-  user_id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(150) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  upi_id VARCHAR(100),
-  phone VARCHAR(15),
+CREATE TABLE IF NOT EXISTS users (
+  user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  upi_id TEXT,
+  phone TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE groups (
-  group_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_name VARCHAR(100) NOT NULL,
-  group_code VARCHAR(10) NOT NULL UNIQUE,
-  created_by INT NOT NULL,
+CREATE TABLE IF NOT EXISTS groups (
+  group_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_name TEXT NOT NULL,
+  group_code TEXT NOT NULL UNIQUE,
+  created_by INTEGER NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE RESTRICT
 );
 
-CREATE TABLE group_members (
-  group_member_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  user_id INT NOT NULL,
-  role ENUM('admin','member') DEFAULT 'member',
+CREATE TABLE IF NOT EXISTS group_members (
+  group_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  role TEXT DEFAULT 'member', -- admin, member
   monthly_budget DECIMAL(10,2) DEFAULT 0,
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_membership (group_id, user_id),
+  UNIQUE (group_id, user_id),
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
-CREATE TABLE groceries (
-  grocery_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  item_name VARCHAR(100) NOT NULL,
-  quantity VARCHAR(50),
+CREATE TABLE IF NOT EXISTS groceries (
+  grocery_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  item_name TEXT NOT NULL,
+  quantity TEXT,
   amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-  purchased_by INT NOT NULL,
+  purchased_by INTEGER NOT NULL,
   purchase_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
   FOREIGN KEY (purchased_by) REFERENCES users(user_id) ON DELETE RESTRICT
 );
 
-CREATE TABLE shopping_list (
-  item_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  item_name VARCHAR(100) NOT NULL,
-  assigned_to INT,
-  status ENUM('pending','purchased') DEFAULT 'pending',
+CREATE TABLE IF NOT EXISTS grocery_contributors (
+  contributor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  grocery_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  amount_paid DECIMAL(10,2) NOT NULL CHECK (amount_paid > 0),
+  FOREIGN KEY (grocery_id) REFERENCES groceries(grocery_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS shopping_list (
+  item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  item_name TEXT NOT NULL,
+  assigned_to INTEGER,
+  status TEXT DEFAULT 'pending', -- pending, purchased
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
   FOREIGN KEY (assigned_to) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
-CREATE TABLE meals (
-  meal_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  user_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS meals (
+  meal_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
   meal_date DATE NOT NULL,
-  meal_type ENUM('lunch','dinner') NOT NULL,
-  is_attending BOOLEAN NOT NULL DEFAULT TRUE,
-  diet_preference ENUM('veg', 'non-veg', 'egg') DEFAULT 'veg',
-  guest_count INT DEFAULT 0,
-  UNIQUE KEY unique_meal_entry (user_id, meal_date, meal_type),
+  meal_type TEXT NOT NULL, -- lunch, dinner
+  is_attending INTEGER NOT NULL DEFAULT 1,
+  diet_preference TEXT DEFAULT 'veg', -- veg, non-veg, egg
+  guest_count INTEGER DEFAULT 0,
+  UNIQUE (user_id, meal_date, meal_type),
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
-CREATE TABLE daily_menus (
-  menu_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS daily_menus (
+  menu_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
   menu_date DATE NOT NULL,
-  meal_type ENUM('lunch','dinner') NOT NULL,
-  description VARCHAR(500) NOT NULL,
-  UNIQUE KEY unique_menu (group_id, menu_date, meal_type),
+  meal_type TEXT NOT NULL, -- lunch, dinner
+  veg_item TEXT NOT NULL,
+  nonveg_item TEXT,
+  UNIQUE (group_id, menu_date, meal_type),
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
 );
 
-CREATE TABLE expenses (
-  expense_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  title VARCHAR(150) NOT NULL,
-  description VARCHAR(255),
+CREATE TABLE IF NOT EXISTS expenses (
+  expense_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
   amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-  category ENUM('grocery','utility','rent','loan','other') DEFAULT 'other',
-  expense_type ENUM('recurring', 'ad_hoc', 'transfer') DEFAULT 'ad_hoc',
-  split_type ENUM('equal','custom') NOT NULL DEFAULT 'equal',
+  category TEXT DEFAULT 'other', -- grocery, utility, rent, loan, other
+  expense_type TEXT DEFAULT 'ad_hoc', -- recurring, ad_hoc, transfer
+  split_type TEXT NOT NULL DEFAULT 'equal', -- equal, custom
   expense_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
 );
 
-CREATE TABLE expense_payers (
-  expense_payer_id INT AUTO_INCREMENT PRIMARY KEY,
-  expense_id INT NOT NULL,
-  user_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS expense_payers (
+  expense_payer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  expense_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
   amount_paid DECIMAL(10,2) NOT NULL CHECK (amount_paid > 0),
-  UNIQUE KEY unique_expense_payer (expense_id, user_id),
+  UNIQUE (expense_id, user_id),
   FOREIGN KEY (expense_id) REFERENCES expenses(expense_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
-CREATE TABLE expense_members (
-  expense_member_id INT AUTO_INCREMENT PRIMARY KEY,
-  expense_id INT NOT NULL,
-  user_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS expense_members (
+  expense_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  expense_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
   share_amount DECIMAL(10,2) NOT NULL CHECK (share_amount >= 0),
-  UNIQUE KEY unique_expense_member (expense_id, user_id),
+  UNIQUE (expense_id, user_id),
   FOREIGN KEY (expense_id) REFERENCES expenses(expense_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
-CREATE TABLE payments (
-  payment_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  paid_by INT NOT NULL,
-  paid_to INT NOT NULL,
+CREATE TABLE IF NOT EXISTS payments (
+  payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  paid_by INTEGER NOT NULL,
+  paid_to INTEGER NOT NULL,
   amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-  payment_mode ENUM('cash','upi') NOT NULL,
-  note VARCHAR(255),
+  payment_mode TEXT NOT NULL, -- cash, upi
+  note TEXT,
   payment_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
@@ -130,14 +137,14 @@ CREATE TABLE payments (
   CHECK (paid_by <> paid_to)
 );
 
-CREATE TABLE adjustments (
-  adjustment_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  from_user INT NOT NULL,
-  to_user INT NOT NULL,
+CREATE TABLE IF NOT EXISTS adjustments (
+  adjustment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  from_user INTEGER NOT NULL,
+  to_user INTEGER NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
-  reason VARCHAR(255) NOT NULL,
-  created_by INT NOT NULL,
+  reason TEXT NOT NULL,
+  created_by INTEGER NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
   FOREIGN KEY (from_user) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -146,26 +153,26 @@ CREATE TABLE adjustments (
   CHECK (from_user <> to_user)
 );
 
-CREATE TABLE group_settings (
-  group_id INT PRIMARY KEY,
-  meal_cutoff_time TIME NOT NULL DEFAULT '10:00:00',
+CREATE TABLE IF NOT EXISTS group_settings (
+  group_id INTEGER PRIMARY KEY,
+  meal_cutoff_time TEXT NOT NULL DEFAULT '10:00:00',
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
 );
 
-CREATE TABLE activity_logs (
-  log_id INT AUTO_INCREMENT PRIMARY KEY,
-  group_id INT NOT NULL,
-  user_id INT,
-  action VARCHAR(50) NOT NULL,
-  description VARCHAR(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS activity_logs (
+  log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  user_id INTEGER,
+  action TEXT NOT NULL,
+  description TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_groceries_group ON groceries(group_id);
-CREATE INDEX idx_expenses_group ON expenses(group_id);
-CREATE INDEX idx_expense_members_expense ON expense_members(expense_id);
-CREATE INDEX idx_payments_group ON payments(group_id);
-CREATE INDEX idx_meals_date ON meals(meal_date);
-CREATE INDEX idx_shopping_status ON shopping_list(status);
+CREATE INDEX IF NOT EXISTS idx_groceries_group ON groceries(group_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_group ON expenses(group_id);
+CREATE INDEX IF NOT EXISTS idx_expense_members_expense ON expense_members(expense_id);
+CREATE INDEX IF NOT EXISTS idx_payments_group ON payments(group_id);
+CREATE INDEX IF NOT EXISTS idx_meals_date ON meals(meal_date);
+CREATE INDEX IF NOT EXISTS idx_shopping_status ON shopping_list(status);

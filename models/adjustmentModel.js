@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 const AdjustmentModel = {
     async getAdjustmentsByGroup(groupId) {
-        const [rows] = await db.execute(`
+        const rows = await db.all(`
             SELECT a.adjustment_id, a.amount, a.reason, a.created_at,
                    a.from_user, u1.name as from_user_name,
                    a.to_user, u2.name as to_user_name,
@@ -18,20 +18,20 @@ const AdjustmentModel = {
     },
 
     async getAdjustmentById(adjustmentId) {
-        const [rows] = await db.execute('SELECT * FROM adjustments WHERE adjustment_id = ?', [adjustmentId]);
+        const rows = await db.all('SELECT * FROM adjustments WHERE adjustment_id = ?', [adjustmentId]);
         return rows[0];
     },
 
     async addAdjustment(groupId, fromUser, toUser, amount, reason, createdBy) {
-        const [result] = await db.execute(
+        const result = await db.run(
             'INSERT INTO adjustments (group_id, from_user, to_user, amount, reason, created_by) VALUES (?, ?, ?, ?, ?, ?)',
             [groupId, fromUser, toUser, amount, reason, createdBy]
         );
-        return result.insertId;
+        return result.lastID;
     },
 
     async deleteAdjustment(adjustmentId) {
-        await db.execute('DELETE FROM adjustments WHERE adjustment_id = ?', [adjustmentId]);
+        await db.run('DELETE FROM adjustments WHERE adjustment_id = ?', [adjustmentId]);
     }
 };
 

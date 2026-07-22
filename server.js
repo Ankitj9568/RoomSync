@@ -33,6 +33,7 @@ const expenseRoutes = require('./routes/expenseRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adjustmentRoutes = require('./routes/adjustmentRoutes');
 const activityRoutes = require('./routes/activityRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -44,6 +45,7 @@ app.use('/api/meals', mealRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/adjustments', adjustmentRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Basic route to verify server is running
 app.get('/', (req, res) => {

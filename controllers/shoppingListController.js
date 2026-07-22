@@ -68,8 +68,12 @@ const shoppingListController = {
             if (item.status === 'purchased' && status !== 'pending') {
                 return res.status(400).json({ success: false, message: 'Item already purchased' });
             }
+            
+            const finalName = item_name !== undefined ? item_name : item.item_name;
+            const finalAssigned = assigned_to !== undefined ? assigned_to : item.assigned_to;
+            const finalStatus = status !== undefined ? status : item.status;
 
-            await ShoppingListModel.updateItem(itemId, item_name, assigned_to, status);
+            await ShoppingListModel.updateItem(itemId, finalName, finalAssigned, finalStatus);
             res.json({ success: true, message: 'Item updated' });
         } catch (error) {
             console.error('Update shopping item error:', error);

@@ -66,6 +66,51 @@ const mealController = {
             console.error('Toggle meal error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
+    },
+    async getMenu(req, res) {
+        try {
+            const { group_id, date } = req.query;
+            const userId = req.session.userId;
+            
+            if (!group_id || !date) {
+                return res.status(400).json({ success: false, message: 'group_id and date are required' });
+            }
+
+            const isMember = await GroupModel.isMember(group_id, userId);
+            if (!isMember) {
+                return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+
+            const MenuModel = require('../models/menuModel');
+            const menu = await MenuModel.getMenuByGroupAndDate(group_id, date);
+            res.json({ success: true, data: menu });
+        } catch (error) {
+            console.error('Get menu error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
+    async saveMenu(req, res) {
+        try {
+            const { group_id, date, type, veg_item, nonveg_item } = req.body;
+            const userId = req.session.userId;
+
+            if (!group_id || !date || !type || !veg_item) {
+                return res.status(400).json({ success: false, message: 'Missing required fields' });
+            }
+
+            const isMember = await GroupModel.isMember(group_id, userId);
+            if (!isMember) {
+                return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+
+            const MenuModel = require('../models/menuModel');
+            await MenuModel.upsertMenu(group_id, date, type, veg_item, nonveg_item);
+            res.json({ success: true, message: 'Menu updated successfully' });
+        } catch (error) {
+            console.error('Save menu error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
     }
 };
 

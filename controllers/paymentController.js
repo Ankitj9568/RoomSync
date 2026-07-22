@@ -1,7 +1,56 @@
 const PaymentModel = require('../models/paymentModel');
 const GroupModel = require('../models/groupModel');
+const settlementCalculator = require('../utils/settlementCalculator');
 
 const paymentController = {
+    async getSettlements(req, res) {
+        try {
+            const { group_id } = req.query;
+            const userId = req.session.userId;
+
+            if (!group_id) {
+                return res.status(400).json({ success: false, message: 'group_id is required' });
+            }
+
+            const isMember = await GroupModel.isMember(group_id, userId);
+            if (!isMember) {
+                return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+
+            const settlementData = await settlementCalculator.calculateBalances(group_id);
+            const members = await GroupModel.getGroupMembers(group_id);
+            
+            // Map member names to debts
+            const namedDebts = settlementData.debts.map(debt => {
+                const fromUser = members.find(m => m.user_id === debt.from);
+                const toUser = members.find(m => m.user_id === debt.to);
+                return {
+                    from_id: debt.from,
+                    from_name: fromUser ? fromUser.name : 'Unknown',
+                    to_id: debt.to,
+                    to_name: toUser ? toUser.name : 'Unknown',
+                    amount: debt.amount
+                };
+            });
+            
+            // Also fetch recent payments for the history UI
+            const recentPayments = await PaymentModel.getPaymentsByGroup(group_id);
+
+            res.json({ 
+                success: true, 
+                data: {
+                    debts: namedDebts,
+                    total_debt: settlementData.totalDebt,
+                    total_settled: settlementData.totalSettled,
+                    recent_payments: recentPayments.slice(0, 5) // Send top 5 recent
+                } 
+            });
+        } catch (error) {
+            console.error('Get settlements error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
     async getPayments(req, res) {
         try {
             const { group_id } = req.query;
