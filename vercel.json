@@ -15,5 +15,12 @@
       "source": "/(.*)",
       "destination": "/public/$1"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/pages/login.html",
+      "permanent": false
+    }
   ]
 }

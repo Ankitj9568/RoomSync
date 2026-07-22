@@ -22,17 +22,10 @@ Since Vercel functions cannot run raw SQL seed files easily during startup (due 
 
 1.  Open your preferred MySQL client (like DBeaver, TablePlus, or the Railway web UI query tool).
 2.  Connect using the Railway credentials.
-3.  Copy the contents of `database/schema.sql` and execute it in your MySQL client to create the necessary tables.
+3.  Copy the contents of `database/schema_mysql.sql` and execute it in your MySQL client to create the necessary tables.
 4.  *(Optional)* Execute `database/seed.sql` if you want some test data, but usually you want a clean database for production.
 
-**MySQL Schema Compatibility:**
-The `schema.sql` is currently written with SQLite in mind (using `AUTOINCREMENT` instead of `AUTO_INCREMENT`). You will need to slightly adjust the syntax for MySQL:
-
-*   Replace `INTEGER PRIMARY KEY AUTOINCREMENT` with `INT PRIMARY KEY AUTO_INCREMENT`.
-*   Replace `DATETIME DEFAULT CURRENT_TIMESTAMP` with `TIMESTAMP DEFAULT CURRENT_TIMESTAMP`.
-*   Remove any `strict` mode constraints that MySQL doesn't support.
-
-*A MySQL-compatible schema file should be created based on your needs.*
+**Note:** Ensure you use `database/schema_mysql.sql` for deployment, as `database/schema.sql` uses SQLite-specific syntax (like `AUTOINCREMENT`) which will fail on MySQL.
 
 ## 3. Configure Vercel
 
