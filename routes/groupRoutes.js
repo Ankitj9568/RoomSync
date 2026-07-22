@@ -5,6 +5,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.use(authMiddleware);
 
+router.get('/', groupController.getUserGroups);
+router.get('/:id', groupController.getGroupDetails);
 router.post('/create', groupController.createGroup);
 router.post('/join', groupController.joinGroup);
 router.get('/members', groupController.getMembers);

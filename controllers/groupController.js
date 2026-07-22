@@ -7,6 +7,53 @@ function generateGroupCode() {
 }
 
 const groupController = {
+    async getUserGroups(req, res) {
+        try {
+            const userId = req.session.userId;
+            const groups = await GroupModel.getUserGroups(userId);
+            // We map group_id to id so it matches what navbar.js expects
+            const mappedGroups = groups.map(g => ({
+                id: g.group_id,
+                name: g.group_name,
+                role: g.role
+            }));
+            res.json({ success: true, data: mappedGroups });
+        } catch (error) {
+            console.error('Get user groups error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
+    async getGroupDetails(req, res) {
+        try {
+            const groupId = req.params.id;
+            const userId = req.session.userId;
+
+            const isMember = await GroupModel.isMember(groupId, userId);
+            if (!isMember) {
+                return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+
+            const group = await GroupModel.getGroupById(groupId);
+            if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
+
+            const members = await GroupModel.getGroupMembers(groupId);
+            
+            res.json({ 
+                success: true, 
+                data: {
+                    group_id: group.group_id,
+                    name: group.group_name,
+                    join_code: group.group_code,
+                    members: members
+                }
+            });
+        } catch (error) {
+            console.error('Get group details error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
     async createGroup(req, res) {
         try {
             const { name } = req.body;
