@@ -3,8 +3,6 @@ const db = require('../config/db');
 const GroupModel = {
     async createGroup(groupName, groupCode, userId) {
         try {
-            await db.run('BEGIN TRANSACTION');
-
             const groupResult = await db.run(
                 'INSERT INTO `groups` (group_name, group_code, created_by) VALUES (?, ?, ?)',
                 [groupName, groupCode, userId]
@@ -21,10 +19,8 @@ const GroupModel = {
                 [groupId]
             );
 
-            await db.run('COMMIT');
             return groupId;
         } catch (error) {
-            await db.run('ROLLBACK');
             throw error;
         }
     },
@@ -33,7 +29,7 @@ const GroupModel = {
         const rows = await db.all(`
             SELECT g.group_id, g.group_name, g.group_code, gm.role,
             (SELECT COUNT(*) FROM group_members WHERE group_id = g.group_id) as member_count
-            FROM `groups` g
+            FROM \`groups\` g
             JOIN group_members gm ON g.group_id = gm.group_id
             WHERE gm.user_id = ?
         `, [userId]);
@@ -43,7 +39,7 @@ const GroupModel = {
     async getGroupById(groupId) {
         const rows = await db.all(`
             SELECT group_id, group_name, group_code, created_by
-            FROM `groups` WHERE group_id = ?
+            FROM \`groups\` WHERE group_id = ?
         `, [groupId]);
         return rows[0];
     },

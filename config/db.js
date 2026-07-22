@@ -84,19 +84,8 @@ const dbProxy = {
     async run(sql, params) {
         const db = await getDB();
         if (isMySQL) {
-            if (sql.trim().toUpperCase() === 'BEGIN TRANSACTION') {
-                const [res] = await db.query('START TRANSACTION');
-                return res;
-            }
-            if (sql.trim().toUpperCase() === 'COMMIT') {
-                const [res] = await db.query('COMMIT');
-                return res;
-            }
-            if (sql.trim().toUpperCase() === 'ROLLBACK') {
-                const [res] = await db.query('ROLLBACK');
-                return res;
-            }
-            
+            // NOTE: START TRANSACTION / COMMIT / ROLLBACK via pool.query() 
+            // is unsafe without a dedicated connection. We removed them to avoid bugs.
             const [result] = await db.execute(sql, params || []);
             return { lastID: result.insertId, changes: result.affectedRows };
         } else {
