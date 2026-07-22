@@ -22,6 +22,29 @@ app.use(session({
     }
 }));
 
+// Routes
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const groupRoutes = require('./routes/groupRoutes');
+const groceryRoutes = require('./routes/groceryRoutes');
+const shoppingListRoutes = require('./routes/shoppingListRoutes');
+const mealRoutes = require('./routes/mealRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const adjustmentRoutes = require('./routes/adjustmentRoutes');
+const activityRoutes = require('./routes/activityRoutes');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/groups', activityRoutes);
+app.use('/api/groceries', groceryRoutes);
+app.use('/api/shopping-list', shoppingListRoutes);
+app.use('/api/meals', mealRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/adjustments', adjustmentRoutes);
+
 // Basic route to verify server is running
 app.get('/', (req, res) => {
     res.send('RoomSync API running');

@@ -16,7 +16,9 @@ RoomSync is a lightweight web application that helps people living together mana
 - Cash & UPI payment recording
 - Manual balance adjustments
 - Automated settlement calculation
-- Monthly spending analytics & dashboards
+- Monthly spending analytics & visual dashboards
+- Dietary meal categorization (Veg, Non-Veg, Egg)
+- Upcoming bills & budget tracking
 - Multi-group household support
 
 ---

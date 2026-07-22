@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root {
+    --primary-color: #4A6FA5;
+    --secondary-color: #6FCF97;
+    --danger-color: #EB5757;
+    --bg-color: #F7F8FA;
+    --text-color: #2D2D2D;
+    --muted-color: #8A8F98;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+}
+
+/* Custom utilities */
+.text-primary-custom { color: var(--primary-color) !important; }
+.bg-primary-custom { background-color: var(--primary-color) !important; color: white; }
+.btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
+.btn-primary:hover { background-color: #3b5a86; border-color: #3b5a86; }
+
+.text-positive { color: var(--secondary-color) !important; }
+.text-negative { color: var(--danger-color) !important; }
+.text-muted-custom { color: var(--muted-color) !important; }
+
+/* Page wrappers */
+.page-container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Auth Cards */
+.auth-card {
+    max-width: 400px;
+    margin: 60px auto;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Base Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: 24px;
+}
+.card-body {
+    padding: 16px;
+}
+
+/* Navbar / Sidebar */
+.sidebar {
+    background-color: white;
+    z-index: 1040; /* Just below Bootstrap offcanvas z-index */
+}
+
+.sidebar .nav-link {
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-weight: 500;
+    transition: all 0.2s;
+    color: var(--text-color);
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(74, 111, 165, 0.05);
+    color: var(--primary-color) !important;
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.sidebar .nav-link.active i {
+    color: white !important;
+}
+
+.sidebar .nav-link i {
+    color: var(--muted-color);
+}
+
+/* Desktop layout (PC & Laptop >= 992px) */
+@media (min-width: 992px) {
+    body.has-sidebar {
+        padding-left: 260px; /* Offset for fixed sidebar */
+        display: block; 
+    }
+    .sidebar {
+        width: 260px;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+        border-right: none;
+    }
+}
+
+/* Tablet & Mobile layout (< 992px) */
+@media (max-width: 991px) {
+    body.has-sidebar {
+        padding-left: 0;
+        display: block;
+    }
+    .sidebar {
+        width: 300px; /* Drawer width */
+        border-right: none;
+    }
+    .sidebar .nav-link {
+        font-size: 1.1rem;
+        padding: 0.8rem 1rem;
+        margin-bottom: 8px;
+    }
+    .sidebar .nav-link i {
+        font-size: 1.2rem;
+    }
+}
+
+/* Tables */
+.table-responsive {
+    border-radius: 12px;
+    overflow: hidden;
+}

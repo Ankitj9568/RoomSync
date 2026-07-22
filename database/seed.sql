@@ -13,11 +13,11 @@ INSERT INTO groups (group_name, group_code, created_by) VALUES
 ('Flat 302', 'AB12CD', 1);
 
 -- 3. Seed Group Members
-INSERT INTO group_members (group_id, user_id, role) VALUES 
-(1, 1, 'admin'),
-(1, 2, 'member'),
-(1, 3, 'member'),
-(1, 4, 'member');
+INSERT INTO group_members (group_id, user_id, role, monthly_budget) VALUES 
+(1, 1, 'admin', 5000.00),
+(1, 2, 'member', 3000.00),
+(1, 3, 'member', 4000.00),
+(1, 4, 'member', 3500.00);
 
 -- 4. Seed Group Settings
 INSERT INTO group_settings (group_id, meal_cutoff_time) VALUES 
@@ -36,20 +36,35 @@ INSERT INTO shopping_list (group_id, item_name, assigned_to, status) VALUES
 (1, 'Cooking Oil 1L', 1, 'purchased');
 
 -- 7. Seed Meals (Assuming today)
-INSERT INTO meals (group_id, user_id, meal_date, meal_type, is_attending) VALUES 
-(1, 1, CURDATE(), 'lunch', 1),
-(1, 2, CURDATE(), 'lunch', 0),
-(1, 3, CURDATE(), 'lunch', 1),
-(1, 4, CURDATE(), 'lunch', 1),
-(1, 1, CURDATE(), 'dinner', 1),
-(1, 2, CURDATE(), 'dinner', 1),
-(1, 3, CURDATE(), 'dinner', 1),
-(1, 4, CURDATE(), 'dinner', 1);
+INSERT INTO meals (group_id, user_id, meal_date, meal_type, is_attending, diet_preference, guest_count) VALUES 
+(1, 1, CURDATE(), 'lunch', 1, 'veg', 0),
+(1, 2, CURDATE(), 'lunch', 0, 'veg', 0),
+(1, 3, CURDATE(), 'lunch', 1, 'non-veg', 1),
+(1, 4, CURDATE(), 'lunch', 1, 'egg', 0),
+(1, 1, CURDATE(), 'dinner', 1, 'veg', 0),
+(1, 2, CURDATE(), 'dinner', 1, 'non-veg', 0),
+(1, 3, CURDATE(), 'dinner', 1, 'non-veg', 2),
+(1, 4, CURDATE(), 'dinner', 1, 'egg', 0);
+
+-- 7.5 Seed Daily Menus
+INSERT INTO daily_menus (group_id, menu_date, meal_type, description) VALUES
+(1, CURDATE(), 'lunch', 'Rajma Chawal + Kachumber Salad'),
+(1, CURDATE(), 'dinner', 'Roti, Dal Tadka, Paneer Butter Masala');
 
 -- 8. Seed Expenses
-INSERT INTO expenses (group_id, title, description, amount, category, paid_by, split_type, expense_date) VALUES 
-(1, 'Electricity Bill', 'July Month', 1200.00, 'utility', 1, 'equal', CURDATE() - INTERVAL 3 DAY),
-(1, 'Weekend Snacks', 'Pizza and Coke', 800.00, 'other', 2, 'custom', CURDATE() - INTERVAL 1 DAY);
+INSERT INTO expenses (group_id, title, description, amount, category, expense_type, split_type, expense_date) VALUES 
+(1, 'Electricity Bill', 'July Month', 1200.00, 'utility', 'recurring', 'equal', CURDATE() - INTERVAL 3 DAY),
+(1, 'Weekend Snacks', 'Pizza and Coke', 800.00, 'other', 'ad_hoc', 'custom', CURDATE() - INTERVAL 1 DAY);
+
+-- 8.5 Seed Expense Payers
+-- Electricity Bill was paid by Aditi (1) 
+INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES 
+(1, 1, 1200.00);
+
+-- Weekend Snacks was paid by Rohan (2) and Aditi (1)
+INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES 
+(2, 2, 500.00),
+(2, 1, 300.00);
 
 -- 9. Seed Expense Members
 -- Electricity Bill (Equal split: 1200 / 4 = 300)
@@ -73,3 +88,9 @@ INSERT INTO payments (group_id, paid_by, paid_to, amount, payment_mode, note, pa
 -- 11. Seed Adjustments
 INSERT INTO adjustments (group_id, from_user, to_user, amount, reason, created_by) VALUES 
 (1, 3, 1, 50.00, 'Discount on last bill', 1);
+
+-- 12. Seed Activity Logs
+INSERT INTO activity_logs (group_id, user_id, action, description, created_at) VALUES
+(1, 1, 'EXPENSE_ADDED', 'Aditi added "Electricity Bill" (₹ 1200)', CURDATE() - INTERVAL 3 DAY),
+(1, 2, 'PAYMENT_MADE', 'Rohan paid Aditi ₹ 300', CURDATE() - INTERVAL 2 DAY),
+(1, 3, 'GROCERY_LOGGED', 'Meera logged purchase of "Vegetables" (₹ 200)', CURDATE() - INTERVAL 1 DAY);

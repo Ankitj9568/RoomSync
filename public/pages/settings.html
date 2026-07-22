@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - RoomSync</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+
+    <div class="page-container">
+        <h2 class="text-primary-custom mb-4">Settings</h2>
+
+        <div class="row">
+            <!-- Profile Settings -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2 mb-4">My Profile</h5>
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" value="Rohan">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" value="rohan@example.com" disabled>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" value="9876543211">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">UPI ID</label>
+                                <input type="text" class="form-control" value="rohan@ybl">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button class="btn btn-outline-danger w-100"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                </div>
+            </div>
+
+            <!-- Group Settings -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2 mb-4">Group Settings</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Active Group</label>
+                            <select class="form-select">
+                                <option value="1" selected>Flat 302</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4 bg-light p-3 rounded">
+                            <h6 class="text-muted-custom">Invite Members</h6>
+                            <p class="mb-2">Share this code with flatmates so they can join:</p>
+                            <div class="input-group">
+                                <input type="text" class="form-control text-center font-monospace fw-bold fs-5" value="AB12CD" readonly>
+                                <button class="btn btn-outline-secondary" type="button"><i class="bi bi-clipboard"></i> Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="text-muted-custom mb-3">Group Members</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Aditi <span class="badge bg-primary rounded-pill">Admin</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Rohan (You)
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Meera
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top">
+                            <button class="btn btn-outline-danger btn-sm">Leave Group</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/navbar.js"></script>
+</body>
+</html>

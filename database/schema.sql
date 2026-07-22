@@ -25,6 +25,7 @@ CREATE TABLE group_members (
   group_id INT NOT NULL,
   user_id INT NOT NULL,
   role ENUM('admin','member') DEFAULT 'member',
+  monthly_budget DECIMAL(10,2) DEFAULT 0,
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY unique_membership (group_id, user_id),
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
@@ -62,9 +63,21 @@ CREATE TABLE meals (
   meal_date DATE NOT NULL,
   meal_type ENUM('lunch','dinner') NOT NULL,
   is_attending BOOLEAN NOT NULL DEFAULT TRUE,
+  diet_preference ENUM('veg', 'non-veg', 'egg') DEFAULT 'veg',
+  guest_count INT DEFAULT 0,
   UNIQUE KEY unique_meal_entry (user_id, meal_date, meal_type),
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE daily_menus (
+  menu_id INT AUTO_INCREMENT PRIMARY KEY,
+  group_id INT NOT NULL,
+  menu_date DATE NOT NULL,
+  meal_type ENUM('lunch','dinner') NOT NULL,
+  description VARCHAR(500) NOT NULL,
+  UNIQUE KEY unique_menu (group_id, menu_date, meal_type),
+  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
 );
 
 CREATE TABLE expenses (
@@ -73,13 +86,22 @@ CREATE TABLE expenses (
   title VARCHAR(150) NOT NULL,
   description VARCHAR(255),
   amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-  category ENUM('grocery','utility','rent','other') DEFAULT 'other',
-  paid_by INT NOT NULL,
+  category ENUM('grocery','utility','rent','loan','other') DEFAULT 'other',
+  expense_type ENUM('recurring', 'ad_hoc', 'transfer') DEFAULT 'ad_hoc',
   split_type ENUM('equal','custom') NOT NULL DEFAULT 'equal',
   expense_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
-  FOREIGN KEY (paid_by) REFERENCES users(user_id) ON DELETE RESTRICT
+  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
+);
+
+CREATE TABLE expense_payers (
+  expense_payer_id INT AUTO_INCREMENT PRIMARY KEY,
+  expense_id INT NOT NULL,
+  user_id INT NOT NULL,
+  amount_paid DECIMAL(10,2) NOT NULL CHECK (amount_paid > 0),
+  UNIQUE KEY unique_expense_payer (expense_id, user_id),
+  FOREIGN KEY (expense_id) REFERENCES expenses(expense_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE expense_members (
@@ -128,6 +150,17 @@ CREATE TABLE group_settings (
   group_id INT PRIMARY KEY,
   meal_cutoff_time TIME NOT NULL DEFAULT '10:00:00',
   FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
+);
+
+CREATE TABLE activity_logs (
+  log_id INT AUTO_INCREMENT PRIMARY KEY,
+  group_id INT NOT NULL,
+  user_id INT,
+  action VARCHAR(50) NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_groceries_group ON groceries(group_id);

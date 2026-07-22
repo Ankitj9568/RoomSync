@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses - RoomSync</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+
+    <div class="page-container">
+        <h2 class="text-primary-custom mb-3">Group Expenses</h2>
+        <div class="mb-4 d-flex gap-2">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                <i class="bi bi-plus-circle"></i> Add Expense
+            </button>
+            <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#recordLoanModal">
+                <i class="bi bi-currency-exchange"></i> Record Loan
+            </button>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" id="expensesTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily" type="button" role="tab" aria-selected="true">Daily / Ad-hoc</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="fixed-tab" data-bs-toggle="tab" data-bs-target="#fixed" type="button" role="tab" aria-selected="false">Fixed Monthly</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="loans-tab" data-bs-toggle="tab" data-bs-target="#loans" type="button" role="tab" aria-selected="false">Loans & Transfers</button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="expensesTabsContent">
+            <!-- Daily Expenses Tab -->
+            <div class="tab-pane fade show active" id="daily" role="tabpanel" aria-labelledby="daily-tab">
+                <!-- Daily Sparkline Chart -->
+                <div class="card shadow-sm border-0 mb-4 bg-light">
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-muted-custom mb-2">Last 7 Days Spending Trend</h6>
+                        <div style="height: 100px; position: relative;">
+                            <canvas id="dailySparkline"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion" id="expensesAccordionDaily">
+                    <!-- Date Header -->
+                    <h6 class="text-primary-custom mb-3 mt-4 border-bottom pb-2">Today, July 22</h6>
+                    
+                    <div class="accordion-item mb-3 border rounded shadow-sm">
+                        <h2 class="accordion-header" id="headingDaily">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDaily" aria-expanded="false" aria-controls="collapseDaily">
+                                <div class="d-flex justify-content-between w-100 me-3">
+                                    <div>
+                                        <strong>Weekend Snacks</strong>
+                                        <br>
+                                        <span class="badge bg-secondary">Other</span>
+                                        <span class="text-muted small ms-2">Paid by: Rohan</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>₹ 800.00</strong>
+                                        <br>
+                                        <span class="text-muted small">Split: Custom</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapseDaily" class="accordion-collapse collapse" aria-labelledby="headingDaily" data-bs-parent="#expensesAccordionDaily">
+                            <div class="accordion-body bg-light">
+                                <h6 class="text-muted-custom mb-3">Split Details</h6>
+                                <ul class="list-group list-group-flush bg-transparent">
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                        Rohan <span class="text-success">Paid ₹ 800.00</span>
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                        Aditi <span class="text-danger">Owes ₹ 400.00</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Monthly Tab -->
+            <div class="tab-pane fade" id="fixed" role="tabpanel" aria-labelledby="fixed-tab">
+                <!-- Fixed Monthly Breakdown Chart -->
+                <div class="card shadow-sm border-0 mb-4 bg-light">
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-muted-custom mb-3 text-center">Fixed Expenses Breakdown</h6>
+                        <div style="height: 180px; position: relative;">
+                            <canvas id="fixedMonthlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion" id="expensesAccordionFixed">
+                    <div class="accordion-item mb-3 border rounded shadow-sm">
+                        <h2 class="accordion-header" id="headingFixed">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFixed" aria-expanded="false" aria-controls="collapseFixed">
+                                <div class="d-flex justify-content-between w-100 me-3">
+                                    <div>
+                                        <strong>Electricity Bill (July)</strong>
+                                        <br>
+                                        <span class="badge bg-secondary">Utility</span>
+                                        <span class="text-muted small ms-2">Paid by: Aditi</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>₹ 1,200.00</strong>
+                                        <br>
+                                        <span class="text-muted small">Split: Equal</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapseFixed" class="accordion-collapse collapse" aria-labelledby="headingFixed" data-bs-parent="#expensesAccordionFixed">
+                            <div class="accordion-body bg-light">
+                                <h6 class="text-muted-custom mb-3">Split Details</h6>
+                                <ul class="list-group list-group-flush bg-transparent">
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                        Aditi <span class="text-success">Paid ₹ 1,200.00</span>
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                        Rohan <span class="text-danger">Owes ₹ 300.00</span>
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                        Meera <span class="text-danger">Owes ₹ 300.00</span>
+                                    </li>
+                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                        Karan <span class="text-danger">Owes ₹ 300.00</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loans Tab -->
+            <div class="tab-pane fade" id="loans" role="tabpanel" aria-labelledby="loans-tab">
+                <div class="accordion" id="expensesAccordionLoans">
+                    <div class="accordion-item mb-3 border rounded shadow-sm">
+                        <h2 class="accordion-header" id="headingLoan">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLoan" aria-expanded="false" aria-controls="collapseLoan">
+                                <div class="d-flex justify-content-between w-100 me-3">
+                                    <div>
+                                        <strong>Cash Loan</strong>
+                                        <br>
+                                        <span class="badge bg-success">Loan Given</span>
+                                        <span class="text-muted small ms-2">To: Rohan</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong class="text-success">₹ 500.00</strong>
+                                        <br>
+                                        <span class="text-muted small">Just now</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapseLoan" class="accordion-collapse collapse" aria-labelledby="headingLoan" data-bs-parent="#expensesAccordionLoans">
+                            <div class="accordion-body bg-light">
+                                <h6 class="text-muted-custom mb-3">Details</h6>
+                                <ul class="list-group list-group-flush bg-transparent">
+                                    <li class="list-group-item bg-transparent">
+                                        <strong>Note:</strong> For cab fare
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary-custom">Add Shared Expense</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" placeholder="e.g. WiFi Bill" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Expense Type</label>
+                            <select class="form-select" name="expenseType">
+                                <option value="ad_hoc" selected>Daily / Ad-hoc (e.g. Snacks, Groceries)</option>
+                                <option value="recurring">Fixed Monthly (e.g. Rent, Utility, Maid)</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount (₹)</label>
+                                <input type="number" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Category</label>
+                                <select class="form-select">
+                                    <option>Utility</option>
+                                    <option>Grocery</option>
+                                    <option>Maid</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Who Paid?</label>
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="paidBy" id="paidByMe" value="me" checked>
+                                    <label class="form-check-label" for="paidByMe">Me</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="paidBy" id="paidByMultiple" value="multiple">
+                                    <label class="form-check-label" for="paidByMultiple">Multiple People</label>
+                                </div>
+                            </div>
+                            
+                            <!-- Multiple Payers Inputs -->
+                            <div class="card bg-light border-0 d-none" id="multiplePayersSection">
+                                <div class="card-body py-2 px-3">
+                                    <div class="row align-items-center mb-2">
+                                        <div class="col-7">Aditi (You)</div>
+                                        <div class="col-5">
+                                            <input type="number" class="form-control form-control-sm" placeholder="₹">
+                                        </div>
+                                    </div>
+                                    <div class="row align-items-center mb-2">
+                                        <div class="col-7">Rohan</div>
+                                        <div class="col-5">
+                                            <input type="number" class="form-control form-control-sm" placeholder="₹">
+                                        </div>
+                                    </div>
+                                    <div class="row align-items-center mb-2">
+                                        <div class="col-7">Meera</div>
+                                        <div class="col-5">
+                                            <input type="number" class="form-control form-control-sm" placeholder="₹">
+                                        </div>
+                                    </div>
+                                    <div class="row align-items-center">
+                                        <div class="col-7">Karan</div>
+                                        <div class="col-5">
+                                            <input type="number" class="form-control form-control-sm" placeholder="₹">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Split Type</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="splitType" id="splitEqual" value="equal" checked>
+                                    <label class="form-check-label" for="splitEqual">Equally</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="splitType" id="splitCustom" value="custom">
+                                    <label class="form-check-label" for="splitCustom">Custom</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">Save Expense</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Loan Modal -->
+    <div class="modal fade" id="recordLoanModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-success">Record Loan / Transfer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Who is involved?</label>
+                            <select class="form-select" required>
+                                <option value="" disabled selected>Select roommate</option>
+                                <option value="2">Rohan</option>
+                                <option value="3">Meera</option>
+                                <option value="4">Karan</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type of Transfer</label>
+                            <select class="form-select" required>
+                                <option value="gave">I lent them money (They owe me)</option>
+                                <option value="received">I borrowed from them (I owe them)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount (₹)</label>
+                            <input type="number" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Note (Optional)</label>
+                            <input type="text" class="form-control" placeholder="e.g. For cab fare">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success">Save Transfer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Multiple Payers section
+        document.querySelectorAll('input[name="paidBy"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const section = document.getElementById('multiplePayersSection');
+                if (e.target.value === 'multiple') {
+                    section.classList.remove('d-none');
+                } else {
+                    section.classList.add('d-none');
+                }
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/navbar.js"></script>
+    <script>
+        // Daily Sparkline Chart
+        const ctxSpark = document.getElementById('dailySparkline').getContext('2d');
+        new Chart(ctxSpark, {
+            type: 'line',
+            data: {
+                labels: ['16th', '17th', '18th', '19th', '20th', '21st', '22nd'],
+                datasets: [{
+                    label: 'Daily Spend (₹)',
+                    data: [200, 450, 0, 1200, 300, 150, 800],
+                    borderColor: '#2F80ED',
+                    backgroundColor: 'rgba(47, 128, 237, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#2F80ED'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: true, grid: { display: false } },
+                    y: { display: false, min: 0 }
+                }
+            }
+        });
+
+        // Fixed Monthly Breakdown Chart
+        const ctxFixed = document.getElementById('fixedMonthlyChart').getContext('2d');
+        new Chart(ctxFixed, {
+            type: 'doughnut',
+            data: {
+                labels: ['Rent', 'Electricity', 'Maid', 'Cook'],
+                datasets: [{
+                    data: [15000, 1200, 2000, 3000],
+                    backgroundColor: ['#2F80ED', '#ffc107', '#198754', '#dc3545'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
