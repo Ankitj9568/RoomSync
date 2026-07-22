@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS groups (
+CREATE TABLE IF NOT EXISTS `groups` (
   group_id INT PRIMARY KEY AUTO_INCREMENT,
   group_name TEXT NOT NULL,
   group_code VARCHAR(50) NOT NULL UNIQUE,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS group_members (
   monthly_budget DECIMAL(10,2) DEFAULT 0,
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (group_id, user_id),
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS groceries (
   purchased_by INT NOT NULL,
   purchase_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (purchased_by) REFERENCES users(user_id) ON DELETE RESTRICT
 );
 
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS shopping_list (
   assigned_to INT,
   status TEXT DEFAULT 'pending', -- pending, purchased
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (assigned_to) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS meals (
   diet_preference TEXT DEFAULT 'veg', -- veg, non-veg, egg
   guest_count INT DEFAULT 0,
   UNIQUE (user_id, meal_date, meal_type),
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS daily_menus (
   veg_item TEXT NOT NULL,
   nonveg_item TEXT,
   UNIQUE (group_id, menu_date, meal_type),
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS expenses (
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   split_type TEXT NOT NULL DEFAULT 'equal', -- equal, custom
   expense_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS expense_payers (
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS payments (
   note TEXT,
   payment_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (paid_by) REFERENCES users(user_id) ON DELETE RESTRICT,
   FOREIGN KEY (paid_to) REFERENCES users(user_id) ON DELETE RESTRICT,
   CHECK (paid_by <> paid_to)
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS adjustments (
   reason TEXT NOT NULL,
   created_by INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (from_user) REFERENCES users(user_id) ON DELETE CASCADE,
   FOREIGN KEY (to_user) REFERENCES users(user_id) ON DELETE CASCADE,
   FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE RESTRICT,
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS adjustments (
 CREATE TABLE IF NOT EXISTS group_settings (
   group_id INT PRIMARY KEY,
   meal_cutoff_time TEXT NOT NULL DEFAULT '10:00:00',
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS activity_logs (
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   action TEXT NOT NULL,
   description TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
