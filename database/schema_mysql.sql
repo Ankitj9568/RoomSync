@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS group_members (
   group_member_id INT PRIMARY KEY AUTO_INCREMENT,
   group_id INT NOT NULL,
   user_id INT NOT NULL,
-  role TEXT DEFAULT 'member', -- admin, member
+  role VARCHAR(255) DEFAULT 'member', -- admin, member
   monthly_budget DECIMAL(10,2) DEFAULT 0,
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (group_id, user_id),
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS shopping_list (
   group_id INT NOT NULL,
   item_name TEXT NOT NULL,
   assigned_to INT,
-  status TEXT DEFAULT 'pending', -- pending, purchased
+  status VARCHAR(255) DEFAULT 'pending', -- pending, purchased
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (assigned_to) REFERENCES users(user_id) ON DELETE SET NULL
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS meals (
   meal_date DATE NOT NULL,
   meal_type VARCHAR(50) NOT NULL, -- lunch, dinner
   is_attending INT NOT NULL DEFAULT 1,
-  diet_preference TEXT DEFAULT 'veg', -- veg, non-veg, egg
+  diet_preference VARCHAR(255) DEFAULT 'veg', -- veg, non-veg, egg
   guest_count INT DEFAULT 0,
   UNIQUE (user_id, meal_date, meal_type),
   FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
@@ -93,9 +93,9 @@ CREATE TABLE IF NOT EXISTS expenses (
   title TEXT NOT NULL,
   description TEXT,
   amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-  category TEXT DEFAULT 'other', -- grocery, utility, rent, loan, other
-  expense_type TEXT DEFAULT 'ad_hoc', -- recurring, ad_hoc, transfer
-  split_type TEXT NOT NULL DEFAULT 'equal', -- equal, custom
+  category VARCHAR(255) DEFAULT 'other', -- grocery, utility, rent, loan, other
+  expense_type VARCHAR(255) DEFAULT 'ad_hoc', -- recurring, ad_hoc, transfer
+  split_type VARCHAR(255) NOT NULL DEFAULT 'equal', -- equal, custom
   expense_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS adjustments (
 
 CREATE TABLE IF NOT EXISTS group_settings (
   group_id INT PRIMARY KEY,
-  meal_cutoff_time TEXT NOT NULL DEFAULT '10:00:00',
+  meal_cutoff_time VARCHAR(255) NOT NULL DEFAULT '10:00:00',
   FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE
 );
 
@@ -170,9 +170,9 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_groceries_group ON groceries(group_id);
-CREATE INDEX IF NOT EXISTS idx_expenses_group ON expenses(group_id);
-CREATE INDEX IF NOT EXISTS idx_expense_members_expense ON expense_members(expense_id);
-CREATE INDEX IF NOT EXISTS idx_payments_group ON payments(group_id);
-CREATE INDEX IF NOT EXISTS idx_meals_date ON meals(meal_date);
-CREATE INDEX IF NOT EXISTS idx_shopping_status ON shopping_list(status);
+CREATE INDEX idx_groceries_group ON groceries(group_id);
+CREATE INDEX idx_expenses_group ON expenses(group_id);
+CREATE INDEX idx_expense_members_expense ON expense_members(expense_id);
+CREATE INDEX idx_payments_group ON payments(group_id);
+CREATE INDEX idx_meals_date ON meals(meal_date);
+CREATE INDEX idx_shopping_status ON shopping_list(status);
