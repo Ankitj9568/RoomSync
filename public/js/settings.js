@@ -57,6 +57,23 @@ async function loadGroupSettings() {
             
             document.getElementById('groupCode').value = res.data.join_code;
             
+            // Generate QR Code
+            const qrContainer = document.getElementById('qrcodePlaceholder');
+            const qrHint = document.getElementById('qrcodeHint');
+            if (qrContainer && typeof QRCode !== 'undefined') {
+                qrContainer.innerHTML = ''; // clear previous
+                qrContainer.style.setProperty('display', 'inline-block', 'important');
+                qrHint.style.display = 'block';
+                new QRCode(qrContainer, {
+                    text: res.data.join_code,
+                    width: 128,
+                    height: 128,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+            
             // Render Members
             const membersList = document.getElementById('groupMembersList');
             let html = '';
