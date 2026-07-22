@@ -10,6 +10,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Trust reverse proxy (for Railway/Vercel) to allow secure cookies
+app.set('trust proxy', 1);
+
 // Session configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'secret',
@@ -17,7 +20,7 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'lax', // Lax is safer for redirects
         secure: process.env.NODE_ENV === 'production'
     }
 }));

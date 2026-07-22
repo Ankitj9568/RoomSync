@@ -165,6 +165,9 @@ async function loadUserGroups() {
             
             if (groups.length === 0) {
                 groupSelect.innerHTML = '<option value="">No Groups Found</option>';
+                if (!window.location.pathname.includes('/pages/groups.html')) {
+                    window.location.href = '/pages/groups.html';
+                }
                 return;
             }
             
