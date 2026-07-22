@@ -6,7 +6,7 @@ const GroupModel = {
             await db.run('BEGIN TRANSACTION');
 
             const groupResult = await db.run(
-                'INSERT INTO groups (group_name, group_code, created_by) VALUES (?, ?, ?)',
+                'INSERT INTO `groups` (group_name, group_code, created_by) VALUES (?, ?, ?)',
                 [groupName, groupCode, userId]
             );
             const groupId = groupResult.lastID;
@@ -33,7 +33,7 @@ const GroupModel = {
         const rows = await db.all(`
             SELECT g.group_id, g.group_name, g.group_code, gm.role,
             (SELECT COUNT(*) FROM group_members WHERE group_id = g.group_id) as member_count
-            FROM groups g
+            FROM `groups` g
             JOIN group_members gm ON g.group_id = gm.group_id
             WHERE gm.user_id = ?
         `, [userId]);
@@ -43,13 +43,13 @@ const GroupModel = {
     async getGroupById(groupId) {
         const rows = await db.all(`
             SELECT group_id, group_name, group_code, created_by
-            FROM groups WHERE group_id = ?
+            FROM `groups` WHERE group_id = ?
         `, [groupId]);
         return rows[0];
     },
 
     async getGroupByCode(groupCode) {
-        const rows = await db.all('SELECT group_id, group_name FROM groups WHERE group_code = ?', [groupCode]);
+        const rows = await db.all('SELECT group_id, group_name FROM `groups` WHERE group_code = ?', [groupCode]);
         return rows[0];
     },
 
@@ -77,7 +77,7 @@ const GroupModel = {
     },
 
     async deleteGroup(groupId) {
-        await db.run('DELETE FROM groups WHERE group_id = ?', [groupId]);
+        await db.run('DELETE FROM `groups` WHERE group_id = ?', [groupId]);
     },
 
     async getSettings(groupId) {
