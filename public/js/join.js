@@ -35,10 +35,12 @@ function showInvite(isValid) {
     document.getElementById('inviteState').classList.remove('d-none');
 
     // Check if user is logged in
-    const token = localStorage.getItem('token');
+    const userId = getUserId();
     
-    if (token) {
+    if (userId) {
         document.getElementById('joinBtn').style.display = 'block';
+        // Automatically attempt to join to save a click
+        handleJoin();
     } else {
         document.getElementById('authRequiredAlert').classList.remove('d-none');
         

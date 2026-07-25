@@ -6,23 +6,12 @@ function showLoader() {
     if (!loader) {
         loader = document.createElement('div');
         loader.id = 'global-loader';
+        loader.className = 'global-loader-overlay';
         loader.innerHTML = `
             <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Loading...</span>
             </div>
         `;
-        Object.assign(loader.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '9999'
-        });
         document.body.appendChild(loader);
     }
     loader.style.display = 'flex';
