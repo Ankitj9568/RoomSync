@@ -8,18 +8,19 @@ RoomSync is a lightweight web application that helps people living together mana
 
 ## Features
 
-- Grocery purchase tracking
-- Shared shopping list with member assignment
-- Daily lunch & dinner meal intimation
-- Shared expense management
-- Equal & custom expense splitting
-- Cash & UPI payment recording
-- Manual balance adjustments
-- Automated settlement calculation
-- Monthly spending analytics & visual dashboards
-- Dietary meal categorization (Veg, Non-Veg, Egg)
-- Upcoming bills & budget tracking
-- Multi-group household support
+- **Light & Dark Theme Support**: System-preference detection with a manual toggle and seamless FOUC (Flash of Unstyled Content) prevention.
+- **Grocery Management**: Track purchases, assign members to shopping lists, and automatically split costs.
+- **Meal Planning**: Daily lunch and dinner intimation with dietary categorization (Veg, Non-Veg, Egg).
+- **Expense & Settlements**: 
+  - Record shared expenses with equal or custom splitting.
+  - Track cash and UPI payments with an undo capability.
+  - Automated settlement calculation using a greedy algorithm to minimize transactions.
+- **Visual Analytics**: Monthly spending dashboards powered by Chart.js.
+- **Group Administration**: 
+  - Multi-group support allowing users to be part of multiple households.
+  - Role-based permissions (Admin vs Member).
+  - Invite links and scannable QR codes for easy onboarding.
+  - Configurable joining workflows (Direct Join vs Admin Approval for pending requests).
 
 ---
 
@@ -89,15 +90,14 @@ Once the server starts, open `http://localhost:3000` in your browser.
 
 ## Production Deployment (Vercel + MySQL)
 
-For deploying to production (like Vercel), SQLite cannot be used due to serverless ephemeral filesystems. RoomSync supports automatically switching to MySQL if a `DATABASE_URL` is provided.
+For deploying to production environments, RoomSync supports automatically switching to MySQL if a `DATABASE_URL` is provided. The application includes a built-in auto-migration script that ensures your MySQL schema stays up to date with new features on startup.
 
 1. Set up a MySQL database (e.g., using Railway or PlanetScale).
-2. Set the following environment variables in your Vercel project:
+2. Set the following environment variables in your hosting provider:
    - `DATABASE_URL`: Your full MySQL connection string.
    - `SESSION_SECRET`: A secure random string for signing cookies.
-3. Deploy! RoomSync includes a `vercel.json` file ready for zero-config Vercel deployment.
+3. Deploy the application. RoomSync includes a `vercel.json` file ready for zero-config Vercel deployment, and works out-of-the-box on platforms like Railway.
 
-> For detailed deployment instructions, see [docs/Deployment.md](docs/Deployment.md).
 
 ---
 
