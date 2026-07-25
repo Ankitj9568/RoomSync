@@ -26,7 +26,7 @@ const userController = {
                 return res.status(400).json({ success: false, message: 'Name is required' });
             }
             
-            if (phone && phone.length !== 10) {
+            if (phone && String(phone).length !== 10) {
                 return res.status(400).json({ success: false, message: 'INVALID_PHONE_FORMAT' });
             }
             

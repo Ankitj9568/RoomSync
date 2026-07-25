@@ -297,22 +297,39 @@ async function saveMenu() {
     const groupId = getActiveGroupId();
     if (!groupId) return;
     
-    const isLunch = document.getElementById('lunchMenuBtn').classList.contains('active');
-    const mealType = isLunch ? 'lunch' : 'dinner';
-    const vegOption = document.getElementById('vegOption').value;
-    const nonVegOption = document.getElementById('nonVegOption').value;
+    const lunchVeg = document.getElementById('lunchVeg').value;
+    const lunchNonVeg = document.getElementById('lunchNonVeg').value;
+    const dinnerVeg = document.getElementById('dinnerVeg').value;
+    const dinnerNonVeg = document.getElementById('dinnerNonVeg').value;
     
     try {
-        await apiFetch('/api/meals/menu', {
-            method: 'POST',
-            body: {
-                group_id: groupId,
-                date: new Date().toISOString().split('T')[0],
-                type: mealType,
-                veg_item: vegOption,
-                nonveg_item: nonVegOption
-            }
-        });
+        const dateStr = new Date().toISOString().split('T')[0];
+        
+        if (lunchVeg || lunchNonVeg) {
+            await apiFetch('/api/meals/menu', {
+                method: 'POST',
+                body: {
+                    group_id: groupId,
+                    date: dateStr,
+                    type: 'lunch',
+                    veg_item: lunchVeg || 'None',
+                    nonveg_item: lunchNonVeg
+                }
+            });
+        }
+        
+        if (dinnerVeg || dinnerNonVeg) {
+            await apiFetch('/api/meals/menu', {
+                method: 'POST',
+                body: {
+                    group_id: groupId,
+                    date: dateStr,
+                    type: 'dinner',
+                    veg_item: dinnerVeg || 'None',
+                    nonveg_item: dinnerNonVeg
+                }
+            });
+        }
         
         // Hide modal
         const modalEl = document.getElementById('editMenuModal');

@@ -6,12 +6,12 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.use(authMiddleware);
 
 router.get('/', groupController.getUserGroups);
-router.get('/:id', groupController.getGroupDetails);
 router.post('/create', groupController.createGroup);
 router.post('/join', groupController.joinGroup);
 router.get('/members', groupController.getMembers);
 router.post('/members/add', groupController.addMemberDirectly);
 router.post('/members/remove', groupController.removeMember);
 router.get('/logs', groupController.getLogs);
+router.get('/:id', groupController.getGroupDetails);
 
 module.exports = router;

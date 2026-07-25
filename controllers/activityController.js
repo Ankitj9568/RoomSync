@@ -4,9 +4,12 @@ class ActivityController {
     static async getGroupActivities(req, res) {
         try {
             const groupId = req.params.groupId;
+            const userId = req.session.userId;
             
             // Check if user belongs to group
-            if (req.session.user.groupId != groupId) {
+            const GroupModel = require('../models/groupModel');
+            const isMember = await GroupModel.isMember(groupId, userId);
+            if (!isMember) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
 

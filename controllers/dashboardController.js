@@ -2,6 +2,7 @@ const ExpenseModel = require('../models/expenseModel');
 const GroceryModel = require('../models/groceryModel');
 const GroupModel = require('../models/groupModel');
 const MealModel = require('../models/mealModel');
+const MenuModel = require('../models/menuModel');
 const settlementCalculator = require('../utils/settlementCalculator');
 
 const dashboardController = {
@@ -46,7 +47,7 @@ const dashboardController = {
 
             // 3. Next Meal
             const today = new Date().toISOString().split('T')[0];
-            const menu = await MealModel.getMenuByDate(group_id, today);
+            const menu = await MenuModel.getMenuByGroupAndDate(group_id, today);
             
             let nextMeal = null;
             if (menu && menu.length > 0) {
