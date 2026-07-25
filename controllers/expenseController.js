@@ -33,6 +33,9 @@ const expenseController = {
             if (!group_id || !title || !amount || !split_type || !expense_date || !splits) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
+            if (Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            }
 
             const isMember = await GroupModel.isMember(group_id, userId);
             if (!isMember) {
@@ -97,6 +100,9 @@ const expenseController = {
             const expense = await ExpenseModel.getExpenseById(expenseId);
             if (!expense) {
                 return res.status(404).json({ success: false, message: 'Expense not found' });
+            }
+            if (Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
             }
 
             const isMember = await GroupModel.isMember(expense.group_id, userId);

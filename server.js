@@ -5,6 +5,12 @@ require('dotenv').config();
 
 const app = express();
 
+// Validate critical config in production
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+    console.error('FATAL: SESSION_SECRET environment variable must be set in production.');
+    process.exit(1);
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -50,10 +56,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/adjustments', adjustmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-// Basic route to verify server is running
-app.get('/', (req, res) => {
-    res.send('RoomSync API running');
-});
+// Fallback: serve index.html for the root
+// (express.static already handles this via public/index.html)
 
 // Start Server only if not running on Vercel
 if (!process.env.VERCEL) {

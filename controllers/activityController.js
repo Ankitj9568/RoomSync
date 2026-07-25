@@ -14,7 +14,7 @@ class ActivityController {
             }
 
             const activities = await ActivityLogModel.getByGroupId(groupId);
-            res.json(activities);
+            res.json({ success: true, data: activities });
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: 'Server error fetching activities' });

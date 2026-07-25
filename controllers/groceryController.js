@@ -33,6 +33,9 @@ const groceryController = {
             if (!group_id || !item_name || !amount || !purchase_date) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
+            if (Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            }
 
             const isMember = await GroupModel.isMember(group_id, userId);
             if (!isMember) {
@@ -43,6 +46,10 @@ const groceryController = {
             let parsedContributors = [];
             if (contributors && Array.isArray(contributors)) {
                 parsedContributors = contributors;
+                const totalPaid = parsedContributors.reduce((sum, c) => sum + Number(c.amount_paid), 0);
+                if (Math.abs(totalPaid - amount) > 0.01) {
+                    return res.status(400).json({ success: false, message: 'Sum of contributors must equal total amount' });
+                }
             }
 
             const groceryId = await GroceryModel.addGrocery(group_id, item_name, quantity, amount, userId, purchase_date, parsedContributors);
@@ -79,6 +86,9 @@ const groceryController = {
             if (!grocery) {
                 return res.status(404).json({ success: false, message: 'Grocery not found' });
             }
+            if (Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            }
 
             if (grocery.purchased_by !== userId) {
                 return res.status(403).json({ success: false, message: 'Only purchaser can edit' });
@@ -86,7 +96,7 @@ const groceryController = {
 
             // Check if same day
             const today = new Date().toISOString().split('T')[0];
-            const purchaseDate = new Date(grocery.created_at).toISOString().split('T')[0];
+            const purchaseDate = new Date(grocery.purchase_date).toISOString().split('T')[0];
             if (today !== purchaseDate) {
                 return res.status(403).json({ success: false, message: 'Cannot edit past records' });
             }
@@ -115,7 +125,7 @@ const groceryController = {
 
             // Check if same day
             const today = new Date().toISOString().split('T')[0];
-            const purchaseDate = new Date(grocery.created_at).toISOString().split('T')[0];
+            const purchaseDate = new Date(grocery.purchase_date).toISOString().split('T')[0];
             if (today !== purchaseDate) {
                 return res.status(403).json({ success: false, message: 'Cannot delete past records' });
             }

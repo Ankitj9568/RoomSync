@@ -77,12 +77,40 @@ const GroupModel = {
     },
 
     async getSettings(groupId) {
-        const rows = await db.all('SELECT meal_cutoff_time FROM group_settings WHERE group_id = ?', [groupId]);
+        const rows = await db.all('SELECT meal_cutoff_time, allow_direct_join FROM group_settings WHERE group_id = ?', [groupId]);
         return rows[0];
     },
 
-    async updateSettings(groupId, mealCutoffTime) {
-        await db.run('UPDATE group_settings SET meal_cutoff_time = ? WHERE group_id = ?', [mealCutoffTime, groupId]);
+    async updateSettings(groupId, mealCutoffTime, allowDirectJoin) {
+        await db.run('UPDATE group_settings SET meal_cutoff_time = ?, allow_direct_join = ? WHERE group_id = ?', 
+            [mealCutoffTime, allowDirectJoin, groupId]);
+    },
+    
+    async createJoinRequest(groupId, userId) {
+        const result = await db.run(
+            'INSERT INTO join_requests (group_id, user_id, status) VALUES (?, ?, ?)',
+            [groupId, userId, 'pending']
+        );
+        return result.lastID;
+    },
+    
+    async getPendingJoinRequests(groupId) {
+        return await db.all(`
+            SELECT jr.request_id, jr.group_id, jr.user_id, jr.status, jr.created_at, u.name as user_name, u.email as user_email
+            FROM join_requests jr
+            JOIN users u ON jr.user_id = u.user_id
+            WHERE jr.group_id = ? AND jr.status = 'pending'
+            ORDER BY jr.created_at DESC
+        `, [groupId]);
+    },
+    
+    async getJoinRequestById(requestId) {
+        const rows = await db.all('SELECT * FROM join_requests WHERE request_id = ?', [requestId]);
+        return rows[0];
+    },
+    
+    async updateJoinRequestStatus(requestId, status) {
+        await db.run('UPDATE join_requests SET status = ? WHERE request_id = ?', [status, requestId]);
     },
 
     async assignNewAdmin(groupId) {

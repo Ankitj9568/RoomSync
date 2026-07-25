@@ -104,6 +104,9 @@ function renderSettlements(data) {
     }
     
     container.innerHTML = html;
+    
+    // Render History
+    renderPaymentHistory(recent_payments);
 }
 
 function preparePaymentModal(toId, toName, amount) {
@@ -161,5 +164,120 @@ async function recordPayment() {
     } catch (error) {
         console.error("Failed to record payment", error);
         alert(error.message || "Failed to log payment");
+    }
+}
+
+async function deletePayment(paymentId) {
+    if (!confirm('Are you sure you want to delete this payment? This action cannot be undone.')) return;
+    try {
+        await apiFetch(`/api/payments/${paymentId}`, {
+            method: 'DELETE'
+        });
+        // Reload data
+        loadSettlements();
+    } catch (error) {
+        console.error("Failed to delete payment", error);
+        alert(error.message || 'Failed to delete payment');
+    }
+}
+
+function renderPaymentHistory(payments) {
+    const tbody = document.getElementById('paymentHistoryTable');
+    if (!payments || payments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No payment history yet.</td></tr>';
+        return;
+    }
+    
+    const currentUserId = parseInt(getUserId());
+    let html = '';
+    
+    payments.forEach(pay => {
+        const isPayee = pay.paid_to === currentUserId;
+        const isPayer = pay.paid_by === currentUserId;
+        
+        let statusBadge = '';
+        if (pay.status === 'approved') {
+            statusBadge = '<span class="badge bg-success">Settled</span>';
+        } else if (pay.status === 'rejected') {
+            statusBadge = '<span class="badge bg-danger">Rejected</span>';
+        } else {
+            statusBadge = '<span class="badge bg-warning">Pending</span>';
+        }
+        
+        let actionBtn = '';
+        if (pay.status === 'pending' && isPayee) {
+            actionBtn = `
+                <button class="btn btn-sm btn-success me-1" onclick="verifyPayment(${pay.payment_id}, 'approved')" title="Approve">
+                    <i class="bi bi-check-lg"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="verifyPayment(${pay.payment_id}, 'rejected')" title="Reject">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            `;
+        } else if (pay.status === 'pending' && isPayer) {
+            actionBtn = '<span class="text-muted small me-2">Waiting...</span>';
+        } else if (pay.status === 'approved') {
+            let timeStr = '';
+            if (pay.created_at) {
+                const dateObj = new Date(pay.created_at);
+                timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+            actionBtn = `<span class="text-success small me-2"><i class="bi bi-check-all"></i> ${timeStr}</span>`;
+        } else if (pay.status === 'rejected') {
+            actionBtn = '<span class="text-danger small me-2"><i class="bi bi-x-circle"></i></span>';
+        }
+
+        if (isPayer) {
+            actionBtn += `
+                <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${pay.payment_id})" title="Delete Payment">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+        }
+
+        const dateStr = new Date(pay.payment_date).toLocaleDateString();
+        
+        html += `
+            <tr>
+                <td class="ps-4">
+                    <div class="fw-medium">${dateStr}</div>
+                    <div class="small text-muted">${pay.payment_mode}</div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                            ${pay.paid_by_name.charAt(0).toUpperCase()}
+                        </div>
+                        ${pay.paid_by_name}
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                            ${pay.paid_to_name.charAt(0).toUpperCase()}
+                        </div>
+                        ${pay.paid_to_name}
+                    </div>
+                </td>
+                <td class="fw-bold">₹ ${parseFloat(pay.amount).toFixed(0)}</td>
+                <td>${statusBadge}</td>
+                <td class="text-end pe-4">${actionBtn}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+async function verifyPayment(paymentId, status) {
+    try {
+        await apiFetch(`/api/payments/${paymentId}/verify`, {
+            method: 'PATCH',
+            body: { status }
+        });
+        loadSettlements(); // Refresh both debts and history
+    } catch (error) {
+        console.error("Verification failed", error);
+        alert(error.message || "Failed to verify payment");
     }
 }

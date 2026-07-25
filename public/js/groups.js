@@ -37,14 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (joinGroupForm) {
         joinGroupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const code = document.getElementById('joinGroupCode').value.trim().toUpperCase();
+            let code = document.getElementById('joinGroupCode').value.trim();
+            if (code.includes('?code=')) {
+                code = code.split('?code=')[1].split('&')[0];
+            }
+            code = code.toUpperCase();
             try {
-                await apiFetch('/api/groups/join', {
+                const res = await apiFetch('/api/groups/join', {
                     method: 'POST',
                     body: { code }
                 });
                 alert('Joined group successfully!');
                 joinGroupForm.reset();
+                if (res.data && res.data.group_id) {
+                    localStorage.setItem('activeGroupId', res.data.group_id);
+                }
                 window.location.reload();
             } catch (error) {
                 alert(error.message || 'Failed to join group');

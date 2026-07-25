@@ -1,33 +1,53 @@
+const roomSyncLogo = `
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2 text-primary-custom" style="min-width: 28px;">
+  <path d="M3 10L12 3l9 7"></path>
+  <path d="M5 10v10a1 1 0 001 1h12a1 1 0 001-1V10"></path>
+  <circle cx="12" cy="12" r="1.5" fill="currentColor"></circle>
+  <circle cx="8" cy="17" r="2" fill="var(--color-accent)" stroke="none"></circle>
+  <circle cx="16" cy="17" r="1.5" fill="currentColor"></circle>
+  <path d="M11 13L9 15.5"></path>
+  <path d="M13 13l2 2.5"></path>
+</svg>
+`;
+
 const navbarHTML = `
 <!-- Mobile Header (Hidden on Desktop) -->
-<div class="d-lg-none bg-white shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
+<div class="d-lg-none bg-surface shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
   <a class="navbar-brand d-flex align-items-center text-decoration-none mb-0" href="/pages/dashboard.html">
-      <i class="bi bi-house-door-fill me-2 fs-3 text-primary-custom"></i>
+      ${roomSyncLogo}
       <span class="fs-4 fw-bold text-primary-custom">RoomSync</span>
   </a>
-  <button class="btn btn-outline-secondary border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
-    <i class="bi bi-list fs-1 text-dark"></i>
-  </button>
+  <div class="d-flex align-items-center">
+    <button class="btn btn-link text-dark text-decoration-none p-1 me-2" id="themeToggleMobile" onclick="toggleTheme()">
+      <i class="bi bi-moon-fill" id="themeIconMobile"></i>
+    </button>
+    <button class="btn btn-outline-secondary border-0 p-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+      <i class="bi bi-list fs-1 text-dark"></i>
+    </button>
+  </div>
 </div>
 
 <!-- Sidebar / Offcanvas Drawer -->
-<div class="offcanvas-lg offcanvas-start sidebar bg-white d-flex flex-column" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+<div class="offcanvas-lg offcanvas-start sidebar d-flex flex-column" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
   
   <!-- Offcanvas Header for Mobile -->
-  <div class="offcanvas-header d-lg-none border-bottom p-3">
+  <div class="offcanvas-header d-lg-none p-3 border-bottom">
     <a class="navbar-brand d-flex align-items-center text-decoration-none" href="/pages/dashboard.html">
-        <i class="bi bi-house-door-fill me-2 fs-4 text-primary-custom"></i>
+        ${roomSyncLogo}
         <span class="fs-4 fw-bold text-primary-custom">RoomSync</span>
     </a>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Close"></button>
   </div>
 
   <!-- Header for Desktop -->
-  <div class="offcanvas-header d-none d-lg-flex p-4 pb-2">
+  <div class="offcanvas-header d-none d-lg-flex p-4 pb-2 border-bottom-0">
       <a class="navbar-brand d-flex align-items-center text-decoration-none w-100" href="/pages/dashboard.html">
-          <i class="bi bi-house-door-fill me-2 fs-4 text-primary-custom"></i>
+          ${roomSyncLogo}
           <span class="fs-4 fw-bold text-primary-custom">RoomSync</span>
       </a>
+      <button class="btn btn-link text-dark text-decoration-none p-1" id="themeToggleDesktop" onclick="toggleTheme()" title="Toggle Theme">
+        <i class="bi bi-moon-fill" id="themeIconDesktop"></i>
+      </button>
   </div>
   <hr class="d-none d-lg-block mx-4 mt-2 mb-2">
       
@@ -73,7 +93,7 @@ const navbarHTML = `
     <!-- User Profile & Group Selector -->
     <div class="mt-auto border-top pt-3 w-100 px-2 pb-2">
         <div class="d-flex align-items-center mb-3">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" id="navUserInitial">
+            <div class="bg-primary-custom rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" id="navUserInitial">
                 ?
             </div>
             <div class="text-truncate">
@@ -82,13 +102,31 @@ const navbarHTML = `
             </div>
         </div>
         
-        <select class="form-select form-select-sm shadow-sm border-0 bg-light" id="navGroupSelect">
+        <select class="form-select form-select-sm shadow-sm bg-light text-dark border-0" id="navGroupSelect">
             <option value="">Loading Groups...</option>
         </select>
     </div>
   </div>
 </div>
 `;
+
+function toggleTheme() {
+    document.body.classList.add('theme-transition');
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('roomsync-theme', newTheme);
+    updateThemeIcons(newTheme);
+    window.dispatchEvent(new Event('themeChanged')); // For charts
+}
+
+function updateThemeIcons(theme) {
+    const iconClass = theme === 'dark' ? 'bi-sun-fill text-warning' : 'bi-moon-fill text-dark';
+    const mobileIcon = document.getElementById('themeIconMobile');
+    const desktopIcon = document.getElementById('themeIconDesktop');
+    if (mobileIcon) mobileIcon.className = 'bi ' + iconClass;
+    if (desktopIcon) desktopIcon.className = 'bi ' + iconClass;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     // Inject Sidebar
@@ -104,11 +142,22 @@ document.addEventListener("DOMContentLoaded", () => {
     navLinks.forEach(link => {
         if (link.getAttribute('href') === currentPath) {
             link.classList.add('active');
-            link.classList.remove('text-dark');
+            link.classList.remove('text-secondary');
         } else {
-            link.classList.add('text-dark');
+            link.classList.add('text-secondary');
         }
     });
+
+    // Initialize Theme
+    const savedTheme = localStorage.getItem('roomsync-theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcons(savedTheme);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        updateThemeIcons('dark');
+    }
+
     // Fetch User Data and Groups
     if (navPlaceholder && typeof apiFetch !== 'undefined') {
         loadUserProfile();

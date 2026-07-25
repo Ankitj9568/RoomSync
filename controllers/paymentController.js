@@ -42,7 +42,7 @@ const paymentController = {
                     debts: namedDebts,
                     total_debt: settlementData.totalDebt,
                     total_settled: settlementData.totalSettled,
-                    recent_payments: recentPayments.slice(0, 5) // Send top 5 recent
+                    recent_payments: recentPayments.slice(0, 50) // Send up to 50 recent payments
                 } 
             });
         } catch (error) {
@@ -81,6 +81,9 @@ const paymentController = {
             if (!group_id || !paid_to || !amount || !payment_mode || !payment_date) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
+            if (Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            }
             if (paidBy === Number(paid_to)) {
                 return res.status(400).json({ success: false, message: 'Cannot pay yourself' });
             }
@@ -116,6 +119,33 @@ const paymentController = {
             res.json({ success: true, message: 'Payment deleted' });
         } catch (error) {
             console.error('Delete payment error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
+    async verifyPayment(req, res) {
+        try {
+            const paymentId = req.params.id;
+            const userId = req.session.userId;
+            const { status } = req.body;
+
+            if (!['approved', 'rejected'].includes(status)) {
+                return res.status(400).json({ success: false, message: 'Invalid status' });
+            }
+
+            const payment = await PaymentModel.getPaymentById(paymentId);
+            if (!payment) {
+                return res.status(404).json({ success: false, message: 'Payment not found' });
+            }
+
+            if (payment.paid_to !== userId) {
+                return res.status(403).json({ success: false, message: 'Only payee can verify payment' });
+            }
+
+            await PaymentModel.updatePaymentStatus(paymentId, status);
+            res.json({ success: true, message: `Payment ${status}` });
+        } catch (error) {
+            console.error('Verify payment error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
     }

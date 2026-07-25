@@ -18,7 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.success) {
                     setUserId(response.data.user_id);
-                    window.location.href = 'dashboard.html';
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let returnTo = urlParams.get('returnTo');
+                    if (returnTo) {
+                        returnTo = decodeURIComponent(returnTo);
+                        // Validate to prevent Open Redirect
+                        if (!returnTo.startsWith('/') && !returnTo.endsWith('.html')) {
+                            returnTo = 'dashboard.html';
+                        }
+                    }
+                    window.location.href = returnTo ? returnTo : 'dashboard.html';
                 }
             } catch (error) {
                 // apiFetch already shows error message
@@ -49,7 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.success) {
                     setUserId(response.data.user_id);
-                    window.location.href = 'dashboard.html';
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let returnTo = urlParams.get('returnTo');
+                    if (returnTo) {
+                        returnTo = decodeURIComponent(returnTo);
+                        // Validate to prevent Open Redirect
+                        if (!returnTo.startsWith('/') && !returnTo.endsWith('.html')) {
+                            returnTo = 'dashboard.html';
+                        }
+                    }
+                    window.location.href = returnTo ? returnTo : 'dashboard.html';
                 }
             } catch (error) {
                 // Error shown by apiFetch

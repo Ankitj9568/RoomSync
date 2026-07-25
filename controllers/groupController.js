@@ -38,6 +38,7 @@ const groupController = {
             if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
 
             const members = await GroupModel.getGroupMembers(groupId);
+            const settings = await GroupModel.getSettings(groupId);
             
             res.json({ 
                 success: true, 
@@ -45,7 +46,8 @@ const groupController = {
                     group_id: group.group_id,
                     name: group.group_name,
                     join_code: group.group_code,
-                    members: members
+                    members: members,
+                    allow_direct_join: settings ? settings.allow_direct_join : 1
                 }
             });
         } catch (error) {
@@ -93,13 +95,102 @@ const groupController = {
             if (isMember) {
                 return res.status(400).json({ success: false, message: 'Already a member of this group' });
             }
-
-            await GroupModel.addMember(group.group_id, userId);
-            await ActivityLogModel.create(group.group_id, userId, 'join_group', 'Joined the group using invite code');
-
-            res.json({ success: true, message: 'Successfully joined group' });
+            
+            const settings = await GroupModel.getSettings(group.group_id);
+            const allowDirectJoin = settings ? settings.allow_direct_join : 1;
+            
+            if (allowDirectJoin) {
+                await GroupModel.addMember(group.group_id, userId);
+                await ActivityLogModel.create(group.group_id, userId, 'join_group', 'Joined the group using invite code');
+                res.json({ success: true, message: 'Successfully joined group', data: { group_id: group.group_id } });
+            } else {
+                // Check if already a pending request
+                const existingRequests = await GroupModel.getPendingJoinRequests(group.group_id);
+                if (existingRequests.find(r => r.user_id === userId)) {
+                    return res.status(400).json({ success: false, message: 'Join request already pending' });
+                }
+                await GroupModel.createJoinRequest(group.group_id, userId);
+                res.json({ success: true, message: 'Join request sent to admin', pending: true });
+            }
         } catch (error) {
             console.error('Join group error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+    
+    async getJoinRequests(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.session.userId;
+            
+            const roleInfo = await GroupModel.isMember(id, userId);
+            if (!roleInfo || roleInfo.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Admin access required' });
+            }
+            
+            const requests = await GroupModel.getPendingJoinRequests(id);
+            res.json({ success: true, data: requests });
+        } catch (error) {
+            console.error('Get join requests error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+    
+    async updateJoinRequest(req, res) {
+        try {
+            const { id, reqId } = req.params;
+            const { status } = req.body; // 'approved' or 'rejected'
+            const userId = req.session.userId;
+            
+            const roleInfo = await GroupModel.isMember(id, userId);
+            if (!roleInfo || roleInfo.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Admin access required' });
+            }
+            
+            const request = await GroupModel.getJoinRequestById(reqId);
+            if (!request || request.group_id != id) {
+                return res.status(404).json({ success: false, message: 'Join request not found' });
+            }
+            
+            if (request.status !== 'pending') {
+                return res.status(400).json({ success: false, message: 'Request already processed' });
+            }
+            
+            await GroupModel.updateJoinRequestStatus(reqId, status);
+            
+            if (status === 'approved') {
+                await GroupModel.addMember(id, request.user_id);
+                await ActivityLogModel.create(id, request.user_id, 'join_group', 'Joined the group via admin approval');
+            }
+            
+            res.json({ success: true, message: `Request ${status}` });
+        } catch (error) {
+            console.error('Update join request error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+    
+    async updateSettings(req, res) {
+        try {
+            const { id } = req.params;
+            const { allow_direct_join, meal_cutoff_time } = req.body;
+            const userId = req.session.userId;
+            
+            const roleInfo = await GroupModel.isMember(id, userId);
+            if (!roleInfo || roleInfo.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Admin access required' });
+            }
+            
+            const currentSettings = await GroupModel.getSettings(id) || { meal_cutoff_time: '10:00', allow_direct_join: 1 };
+            
+            const newAllowDirectJoin = allow_direct_join !== undefined ? (allow_direct_join ? 1 : 0) : currentSettings.allow_direct_join;
+            const newMealCutoffTime = meal_cutoff_time !== undefined ? meal_cutoff_time : currentSettings.meal_cutoff_time;
+            
+            await GroupModel.updateSettings(id, newMealCutoffTime, newAllowDirectJoin);
+            
+            res.json({ success: true, message: 'Settings updated' });
+        } catch (error) {
+            console.error('Update settings error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
     },

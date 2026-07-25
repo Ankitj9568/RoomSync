@@ -68,7 +68,7 @@ function renderDashboardOverview(data) {
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <div>
                     <h6 class="mb-0"><i class="bi ${icon} me-2"></i>${capType}</h6>
-                    <small class="text-muted d-block">${nextMeal.description}</small>
+                    <small class="text-muted d-block">${nextMeal.veg_item || ''}${nextMeal.nonveg_item ? ', ' + nextMeal.nonveg_item : ''}</small>
                 </div>
             </div>
             <div class="text-end">
@@ -93,23 +93,50 @@ function renderActivities(activities) {
     
     activities.slice(0, 10).forEach(act => {
         let icon = 'bi-activity text-primary';
-        if (act.action.includes('Expense')) icon = 'bi-receipt text-danger';
-        if (act.action.includes('Grocery')) icon = 'bi-cart text-success';
-        if (act.action.includes('Meal')) icon = 'bi-cup-hot text-warning';
-        if (act.action.includes('Payment')) icon = 'bi-cash-stack text-success';
+        let actionFriendly = act.action;
         
+        // Map raw action codes to friendly names and icons
+        if (act.action === 'ADDED_EXPENSE') {
+            actionFriendly = 'Expense Added';
+            icon = 'bi-receipt text-danger';
+        } else if (act.action === 'ADDED_GROCERY') {
+            actionFriendly = 'Grocery Added';
+            icon = 'bi-cart text-success';
+        } else if (act.action === 'COMPLETED_GROCERY') {
+            actionFriendly = 'Grocery Purchased';
+            icon = 'bi-cart-check text-success';
+        } else if (act.action === 'ADDED_MEAL') {
+            actionFriendly = 'Meal Scheduled';
+            icon = 'bi-cup-hot text-warning';
+        } else if (act.action === 'RECORDED_PAYMENT') {
+            actionFriendly = 'Payment Recorded';
+            icon = 'bi-cash-stack text-success';
+        } else if (act.action === 'DELETED_EXPENSE') {
+            actionFriendly = 'Expense Deleted';
+            icon = 'bi-trash text-muted';
+        }
+        
+        // Fallbacks for older formats if they exist
+        if (act.action.includes('Expense') && act.action !== 'ADDED_EXPENSE') icon = 'bi-receipt text-danger';
+        if (act.action.includes('Grocery') && act.action !== 'ADDED_GROCERY') icon = 'bi-cart text-success';
+        if (act.action.includes('Meal') && act.action !== 'ADDED_MEAL') icon = 'bi-cup-hot text-warning';
+        if (act.action.includes('Payment') && act.action !== 'RECORDED_PAYMENT') icon = 'bi-cash-stack text-success';
+        
+        // Helper to format 'relative' time (e.g. "2 hours ago")
         const dateStr = new Date(act.created_at).toLocaleString();
         
         const li = document.createElement('div');
-        li.className = 'list-group-item p-3 d-flex align-items-center';
+        li.className = 'activity-item d-flex align-items-center';
         li.innerHTML = `
-            <div class="bg-light rounded-circle p-2 me-3 fs-5">
-                <i class="bi ${icon}"></i>
+            <div class="activity-icon bg-light me-3">
+                <i class="bi ${icon} fs-5"></i>
             </div>
-            <div>
-                <strong>${act.action}</strong>
-                <div class="text-muted small">${act.details || ''}</div>
-                <div class="text-muted small" style="font-size: 0.75rem;">${dateStr}</div>
+            <div class="flex-grow-1">
+                <div class="fw-medium text-dark">${actionFriendly}</div>
+                <div class="text-muted small">${act.description || ''}</div>
+            </div>
+            <div class="text-muted small text-end" style="font-size: 0.75rem;">
+                ${dateStr.split(',')[0]}<br>${dateStr.split(',')[1] || ''}
             </div>
         `;
         container.appendChild(li);

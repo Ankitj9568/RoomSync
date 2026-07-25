@@ -26,13 +26,28 @@ async function loadAnalyticsData() {
     }
 }
 
+function getCSSVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 function renderCharts(data) {
     const { categories, trend } = data;
+    
+    const textColor = getCSSVar('--text-primary');
+    const gridColor = getCSSVar('--border-color');
+    const colorPrimary = getCSSVar('--color-primary');
     
     // Process categories
     const catLabels = Object.keys(categories).map(k => k.charAt(0).toUpperCase() + k.slice(1));
     const catData = Object.values(categories);
-    const catColors = ['#2F80ED', '#56CCF2', '#a8f5c4', '#f2f2f2', '#ffc107', '#dc3545'];
+    const catColors = [
+        getCSSVar('--color-primary'), 
+        getCSSVar('--color-accent'), 
+        getCSSVar('--warning'), 
+        getCSSVar('--danger'), 
+        getCSSVar('--success'), 
+        getCSSVar('--info')
+    ];
     
     const ctxCat = document.getElementById('categoryChart');
     if (ctxCat) {
@@ -43,7 +58,7 @@ function renderCharts(data) {
                 labels: catLabels.length ? catLabels : ['None'],
                 datasets: [{
                     data: catData.length ? catData : [1],
-                    backgroundColor: catData.length ? catColors : ['#e0e0e0'],
+                    backgroundColor: catData.length ? catColors : [getCSSVar('--bg-surface-secondary')],
                     borderWidth: 0
                 }]
             },
@@ -51,7 +66,10 @@ function renderCharts(data) {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'right' }
+                    legend: { 
+                        position: 'right',
+                        labels: { color: textColor }
+                    }
                 }
             }
         });
@@ -71,7 +89,7 @@ function renderCharts(data) {
                 datasets: [{
                     label: 'Group Total Spent (₹)',
                     data: trendData,
-                    backgroundColor: '#2F80ED',
+                    backgroundColor: colorPrimary,
                     borderRadius: 4
                 }]
             },
@@ -79,9 +97,27 @@ function renderCharts(data) {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true }
+                    y: { 
+                        beginAtZero: true,
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: textColor }
+                    }
                 }
             }
         });
     }
 }
+
+window.addEventListener('themeChanged', () => {
+    loadAnalyticsData();
+});
+

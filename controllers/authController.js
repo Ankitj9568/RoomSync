@@ -22,6 +22,10 @@ const authController = {
             const password_hash = await bcrypt.hash(password, 10);
             const userId = await UserModel.create({ name, email, password_hash });
 
+            // Create session so user is logged in immediately
+            req.session.userId = userId;
+            req.session.userName = name;
+
             res.status(201).json({
                 success: true,
                 data: { user_id: userId, name, email }
@@ -52,6 +56,7 @@ const authController = {
 
             // Create session
             req.session.userId = user.user_id;
+            req.session.userName = user.name;
 
             res.json({
                 success: true,

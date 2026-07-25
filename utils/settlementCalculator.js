@@ -65,12 +65,14 @@ const settlementCalculator = {
         // A's balance increases by 100 (they paid out, so they are owed 100 less)
         // B's balance decreases by 100 (they received 100, so they owe 100 more)
         payments.forEach(pay => {
-            const amount = parseFloat(pay.amount);
-            if (balances[pay.paid_by] !== undefined) {
-                balances[pay.paid_by] += amount;
-            }
-            if (balances[pay.paid_to] !== undefined) {
-                balances[pay.paid_to] -= amount;
+            if (pay.status === 'approved') {
+                const amount = parseFloat(pay.amount);
+                if (balances[pay.paid_by] !== undefined) {
+                    balances[pay.paid_by] += amount;
+                }
+                if (balances[pay.paid_to] !== undefined) {
+                    balances[pay.paid_to] -= amount;
+                }
             }
         });
 
@@ -87,7 +89,9 @@ const settlementCalculator = {
 
         let totalSettled = 0;
         payments.forEach(pay => {
-            totalSettled += parseFloat(pay.amount);
+            if (pay.status === 'approved') {
+                totalSettled += parseFloat(pay.amount);
+            }
         });
 
         // Calculate "Who owes whom" using greedy algorithm
@@ -98,8 +102,8 @@ const settlementCalculator = {
 
         Object.keys(balances).forEach(uid => {
             const numUid = parseInt(uid, 10);
-            if (balances[uid] < -0.01) debtors.push({ user_id: numUid, amount: -balances[uid] });
-            else if (balances[uid] > 0.01) creditors.push({ user_id: numUid, amount: balances[uid] });
+            if (balances[uid] < -0.05) debtors.push({ user_id: numUid, amount: -balances[uid] });
+            else if (balances[uid] > 0.05) creditors.push({ user_id: numUid, amount: balances[uid] });
         });
 
         // Sort both descending
@@ -124,8 +128,8 @@ const settlementCalculator = {
             debtor.amount -= settleAmount;
             creditor.amount -= settleAmount;
 
-            if (debtor.amount < 0.01) i++;
-            if (creditor.amount < 0.01) j++;
+            if (debtor.amount < 0.05) i++;
+            if (creditor.amount < 0.05) j++;
         }
 
         return {
