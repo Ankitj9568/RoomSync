@@ -19,6 +19,35 @@ async function getDB() {
         try {
             await dbInstance.query('SELECT 1');
             console.log("MySQL connection successful.");
+            
+            // Auto-migrate MySQL schema for new columns/tables
+            try {
+                await dbInstance.query("ALTER TABLE payments ADD COLUMN status VARCHAR(50) DEFAULT 'approved'");
+                console.log("Migrated payments table: added status column.");
+            } catch (e) { /* Ignore if column exists */ }
+            
+            try {
+                await dbInstance.query("ALTER TABLE group_settings ADD COLUMN allow_direct_join TINYINT(1) DEFAULT 1");
+                console.log("Migrated group_settings table: added allow_direct_join column.");
+            } catch (e) { /* Ignore if column exists */ }
+            
+            try {
+                await dbInstance.query(`
+                    CREATE TABLE IF NOT EXISTS join_requests (
+                        request_id INT AUTO_INCREMENT PRIMARY KEY,
+                        group_id INT NOT NULL,
+                        user_id INT NOT NULL,
+                        status VARCHAR(50) DEFAULT 'pending',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (group_id) REFERENCES \`groups\`(group_id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                    )
+                `);
+                console.log("Migrated join_requests table.");
+            } catch (e) {
+                console.error("Failed to create join_requests table:", e);
+            }
+            
         } catch (e) {
             console.error("MySQL connection failed", e);
             throw e;

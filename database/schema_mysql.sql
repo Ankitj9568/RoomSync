@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS payments (
   payment_mode TEXT NOT NULL, -- cash, upi
   note TEXT,
   payment_date DATE NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending', -- pending, approved, rejected
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (paid_by) REFERENCES users(user_id) ON DELETE RESTRICT,
@@ -156,7 +157,18 @@ CREATE TABLE IF NOT EXISTS adjustments (
 CREATE TABLE IF NOT EXISTS group_settings (
   group_id INT PRIMARY KEY,
   meal_cutoff_time VARCHAR(255) NOT NULL DEFAULT '10:00:00',
+  allow_direct_join TINYINT(1) DEFAULT 1,
   FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS join_requests (
+  request_id INT AUTO_INCREMENT PRIMARY KEY,
+  group_id INT NOT NULL,
+  user_id INT NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS activity_logs (
