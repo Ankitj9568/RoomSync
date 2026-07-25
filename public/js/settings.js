@@ -63,15 +63,28 @@ async function loadGroupSettings() {
             const qrHint = document.getElementById('qrcodeHint');
             if (qrContainer && typeof QRCode !== 'undefined') {
                 qrContainer.innerHTML = ''; // clear previous
+                
+                // Wrap in a clickable link so users can just tap the QR code on a mobile device
+                const qrLinkWrapper = document.createElement('a');
+                qrLinkWrapper.href = joinUrl;
+                qrLinkWrapper.target = '_blank';
+                qrLinkWrapper.style.display = 'inline-block';
+                
+                qrContainer.appendChild(qrLinkWrapper);
+                
                 qrContainer.style.setProperty('display', 'inline-block', 'important');
+                
+                // Make the hint clickable too
+                qrHint.innerHTML = `<a href="${joinUrl}" target="_blank" class="text-decoration-none">Tap here or scan to join</a>`;
                 qrHint.style.display = 'block';
-                new QRCode(qrContainer, {
+                
+                new QRCode(qrLinkWrapper, {
                     text: joinUrl,
-                    width: 128,
-                    height: 128,
+                    width: 140,
+                    height: 140,
                     colorDark : "#000000",
                     colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
+                    correctLevel : QRCode.CorrectLevel.M // M is easier to scan for URLs than H
                 });
             }
             
