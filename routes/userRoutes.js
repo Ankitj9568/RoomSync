@@ -7,5 +7,6 @@ router.use(authMiddleware);
 
 router.get('/me', userController.getProfile);
 router.put('/me', userController.updateProfile);
+router.put('/me/password', userController.changePassword);
 
 module.exports = router;

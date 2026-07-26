@@ -415,6 +415,10 @@ Any Group Member
 
 ---
 
+## GET `/api/groups/code/:code`
+### Purpose
+Fetch group details publicly using an invite code to display the join screen.
+
 ## POST `/api/groups/join`
 
 ### Purpose

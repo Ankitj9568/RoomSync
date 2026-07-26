@@ -57,8 +57,11 @@ async function getDB() {
         const sqlite3 = require('sqlite3');
         const { open } = require('sqlite');
         
-        const dbPath = path.join(__dirname, '../database/roomsync.db');
-        const isNewDb = !fs.existsSync(dbPath) || fs.statSync(dbPath).size === 0;
+        let dbPath = path.join(__dirname, '../database/roomsync.db');
+        if (process.env.NODE_ENV === 'test') {
+            dbPath = ':memory:';
+        }
+        const isNewDb = dbPath === ':memory:' || !fs.existsSync(dbPath) || fs.statSync(dbPath).size === 0;
         
         // Open SQLite connection
         dbInstance = await open({

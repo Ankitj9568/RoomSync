@@ -109,3 +109,19 @@ function getUserId() {
 function setUserId(id) {
     localStorage.setItem('userId', id);
 }
+
+/**
+ * Escapes HTML special characters to prevent XSS when injecting
+ * user-supplied strings into innerHTML. Always use this for any
+ * data that comes from the API (names, titles, descriptions, etc.)
+ * @param {*} str - The string to escape
+ * @returns {string} - HTML-safe string
+ */
+function esc(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}

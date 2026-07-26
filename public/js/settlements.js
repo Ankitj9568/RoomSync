@@ -62,12 +62,12 @@ function renderSettlements(data) {
             const isPayee = debt.to_id === currentUserId;
             const amountStr = parseFloat(debt.amount).toFixed(2);
             
-            const fromInitial = debt.from_name.charAt(0).toUpperCase();
-            const toInitial = debt.to_name.charAt(0).toUpperCase();
+            const fromInitial = esc(debt.from_name).charAt(0).toUpperCase();
+            const toInitial = esc(debt.to_name).charAt(0).toUpperCase();
             
             let actionHtml = '';
             if (isPayer) {
-                actionHtml = `<button class="btn btn-success" type="button" onclick="preparePaymentModal(${debt.to_id}, '${debt.to_name}', ${debt.amount})"><i class="bi bi-check2-circle me-1"></i> Log Payment</button>`;
+                actionHtml = `<button class="btn btn-success" type="button" onclick="preparePaymentModal(${debt.to_id}, '${esc(debt.to_name).replace(/'/g, "\\'")}', ${debt.amount})"><i class="bi bi-check2-circle me-1"></i> Log Payment</button>`;
             } else if (isPayee) {
                 actionHtml = `<button class="btn btn-outline-secondary" disabled>Waiting for Payment</button>`;
             } else {
@@ -92,7 +92,7 @@ function renderSettlements(data) {
                                     <h4 class="${isPayer ? 'text-danger' : isPayee ? 'text-success' : 'text-dark'} mb-0">₹ ${amountStr}</h4>
                                 </div>
                             </div>
-                            <p class="mb-4"><strong>${debt.from_name}</strong> owes <strong>${debt.to_name}</strong></p>
+                            <p class="mb-4"><strong>${esc(debt.from_name)}</strong> owes <strong>${esc(debt.to_name)}</strong></p>
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                 ${actionHtml}
                             </div>
@@ -246,17 +246,17 @@ function renderPaymentHistory(payments) {
                 <td>
                     <div class="d-flex align-items-center">
                         <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
-                            ${pay.paid_by_name.charAt(0).toUpperCase()}
+                            ${esc(pay.paid_by_name).charAt(0).toUpperCase()}
                         </div>
-                        ${pay.paid_by_name}
+                        ${esc(pay.paid_by_name)}
                     </div>
                 </td>
                 <td>
                     <div class="d-flex align-items-center">
                         <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
-                            ${pay.paid_to_name.charAt(0).toUpperCase()}
+                            ${esc(pay.paid_to_name).charAt(0).toUpperCase()}
                         </div>
-                        ${pay.paid_to_name}
+                        ${esc(pay.paid_to_name)}
                     </div>
                 </td>
                 <td class="fw-bold">₹ ${parseFloat(pay.amount).toFixed(0)}</td>

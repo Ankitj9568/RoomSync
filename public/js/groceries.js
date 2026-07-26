@@ -67,14 +67,12 @@ function renderGroceries(groceries) {
         
         let purchaserHtml = '';
         if (g.contributors && g.contributors.length > 1) {
-            // Find the main purchaser (either first in list or the one with max amount)
-            const mainPurchaser = g.contributors[0].name;
+            const mainPurchaser = esc(g.contributors[0].name);
             const extraCount = g.contributors.length - 1;
             
-            // Build the popover HTML
             let popoverContent = `<div class='small text-dark'>`;
             g.contributors.forEach(c => {
-                popoverContent += `<div class='d-flex justify-content-between mb-1 border-bottom pb-1'><span>${c.name}:</span> <span>₹ ${parseFloat(c.amount_paid).toFixed(2)}</span></div>`;
+                popoverContent += `<div class='d-flex justify-content-between mb-1 border-bottom pb-1'><span>${esc(c.name)}:</span> <span>₹ ${parseFloat(c.amount_paid).toFixed(2)}</span></div>`;
             });
             popoverContent += `</div>`;
 
@@ -82,20 +80,20 @@ function renderGroceries(groceries) {
                 ${mainPurchaser}
                 <span class="badge bg-secondary ms-1 text-white" role="button" tabindex="0" 
                       data-bs-toggle="popover" data-bs-trigger="focus" title="Contributions" 
-                      data-bs-html="true" data-bs-content="${popoverContent}">+${extraCount}</span>
+                      data-bs-html="true" data-bs-content="${esc(popoverContent)}">+${extraCount}</span>
             `;
         } else if (g.contributors && g.contributors.length === 1) {
-            purchaserHtml = g.contributors[0].name;
+            purchaserHtml = esc(g.contributors[0].name);
         } else {
-            purchaserHtml = g.purchaser_name;
+            purchaserHtml = esc(g.purchaser_name);
         }
 
         const dateStr = new Date(g.purchase_date).toLocaleDateString();
 
         html += `
             <tr>
-                <td class="fw-medium">${g.item_name}</td>
-                <td>${g.quantity || '-'}</td>
+                <td class="fw-medium">${esc(g.item_name)}</td>
+                <td>${esc(g.quantity) || '-'}</td>
                 <td>₹ ${parseFloat(g.amount).toFixed(2)}</td>
                 <td>${purchaserHtml}</td>
                 <td>${dateStr}</td>
@@ -139,7 +137,7 @@ function prepareAddGroceryModal() {
                 <div class="form-check">
                     <input class="form-check-input contributor-checkbox" type="checkbox" value="${member.user_id}" id="contrib_${member.user_id}" ${isYou ? 'checked' : ''} onchange="updateContributorInputs()">
                     <label class="form-check-label" for="contrib_${member.user_id}">
-                        ${member.name} ${isYou ? '(You)' : ''}
+                        ${esc(member.name)} ${isYou ? '(You)' : ''}
                     </label>
                 </div>
                 <div class="w-50">
@@ -224,6 +222,25 @@ async function handleAddGrocery(e) {
     });
 
     const errorEl = document.getElementById('contributorError');
+
+    // M-5 fix: Check for checked contributors with missing/zero amounts first
+    // This gives a clearer error than "contributions must equal total"
+    const checkedBoxes = document.querySelectorAll('.contributor-checkbox:checked');
+    const missingAmounts = [];
+    checkedBoxes.forEach(cb => {
+        const val = parseFloat(document.getElementById(`contrib_amount_${cb.value}`).value);
+        if (!val || val <= 0) {
+            const label = document.querySelector(`label[for="contrib_${cb.value}"]`);
+            missingAmounts.push(label ? label.textContent.trim() : cb.value);
+        }
+    });
+    if (missingAmounts.length > 0) {
+        errorEl.textContent = `Please enter an amount for: ${missingAmounts.join(', ')}`;
+        errorEl.classList.remove('d-none');
+        return;
+    }
+    errorEl.textContent = 'Sum of contributions must equal the total amount';
+
     if (Math.abs(sum - amount) > 0.01) {
         errorEl.classList.remove('d-none');
         return;

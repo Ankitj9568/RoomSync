@@ -54,8 +54,30 @@
                     </div>
                 </div>
                 
+                <!-- Change Password -->
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2 mb-4">Change Password</h5>
+                        <form id="changePasswordForm">
+                            <div class="mb-3">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="currentPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="newPassword" required minlength="6">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirmNewPassword" required minlength="6">
+                            </div>
+                            <button type="submit" class="btn btn-warning"><i class="bi bi-shield-lock me-1"></i> Change Password</button>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="mt-4">
-                    <button class="btn btn-outline-danger w-100" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                    <a class="btn btn-outline-danger w-100" href="#" id="settingsLogoutBtn" onclick="document.getElementById('logoutBtn') && document.getElementById('logoutBtn').click(); return false;"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
             </div>
 

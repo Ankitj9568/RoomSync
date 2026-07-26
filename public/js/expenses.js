@@ -56,7 +56,7 @@ function renderPayerInputs() {
         const isMe = m.user_id == currentUserId;
         html += `
             <div class="row align-items-center mb-2">
-                <div class="col-7">${m.name} ${isMe ? '(You)' : ''}</div>
+                <div class="col-7">${esc(m.name)} ${isMe ? '(You)' : ''}</div>
                 <div class="col-5">
                     <input type="number" step="0.01" class="form-control form-control-sm payer-input" data-userid="${m.user_id}" placeholder="₹">
                 </div>
@@ -75,7 +75,7 @@ function renderSplitInputs() {
         const isMe = m.user_id == currentUserId;
         html += `
             <div class="row align-items-center mb-2">
-                <div class="col-7">${m.name} ${isMe ? '(You)' : ''}</div>
+                <div class="col-7">${esc(m.name)} ${isMe ? '(You)' : ''}</div>
                 <div class="col-5">
                     <input type="number" step="0.01" class="form-control form-control-sm split-input" data-userid="${m.user_id}" placeholder="₹">
                 </div>
@@ -105,7 +105,7 @@ function prepareLoanModal() {
     let html = '<option value="" disabled selected>Select roommate</option>';
     groupMembers.forEach(m => {
         if (m.user_id != currentUserId) {
-            html += `<option value="${m.user_id}">${m.name}</option>`;
+            html += `<option value="${m.user_id}">${esc(m.name)}</option>`;
         }
     });
     select.innerHTML = html;
@@ -140,13 +140,13 @@ function renderExpenses(expenses) {
         const isFixed = exp.expense_type === 'recurring';
         const dateStr = new Date(exp.expense_date).toLocaleDateString();
         
-        let payerNames = exp.payers.map(p => p.name).join(', ');
+        let payerNames = exp.payers.map(p => esc(p.name)).join(', ');
         
         let splitsHtml = '';
         exp.splits.forEach(s => {
             splitsHtml += `
                 <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
-                    ${s.name} <span>₹ ${parseFloat(s.share_amount).toFixed(2)}</span>
+                    ${esc(s.name)} <span>₹ ${parseFloat(s.share_amount).toFixed(2)}</span>
                 </li>
             `;
         });
@@ -157,9 +157,9 @@ function renderExpenses(expenses) {
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExp${exp.expense_id}">
                         <div class="d-flex justify-content-between w-100 me-3">
                             <div>
-                                <strong>${exp.title}</strong>
+                                <strong>${esc(exp.title)}</strong>
                                 <br>
-                                <span class="badge bg-secondary">${exp.category}</span>
+                                <span class="badge bg-secondary">${esc(exp.category)}</span>
                                 <span class="text-muted small ms-2">Paid by: ${payerNames}</span>
                             </div>
                             <div class="text-end">
@@ -213,23 +213,35 @@ async function saveExpense() {
     }
     
     let payers = [];
+    let payersSum = 0;
     if (isMultiple) {
         document.querySelectorAll('.payer-input').forEach(input => {
             const val = parseFloat(input.value);
             if (val > 0) {
                 payers.push({ user_id: input.dataset.userid, amount_paid: val });
+                payersSum += val;
             }
         });
-    } // If not multiple, backend handles it as paid by current user.
+        if (Math.abs(payersSum - amount) > 0.01) {
+            alert("The sum of amounts paid must equal the total expense amount.");
+            return;
+        }
+    } 
     
     let splits = [];
+    let splitsSum = 0;
     if (isCustom) {
         document.querySelectorAll('.split-input').forEach(input => {
             const val = parseFloat(input.value);
             if (val > 0) {
                 splits.push({ user_id: input.dataset.userid, share_amount: val });
+                splitsSum += val;
             }
         });
+        if (Math.abs(splitsSum - amount) > 0.01) {
+            alert("The sum of custom splits must equal the total expense amount.");
+            return;
+        }
     }
     
     try {

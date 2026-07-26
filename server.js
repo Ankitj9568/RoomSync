@@ -26,7 +26,7 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        sameSite: 'lax', // Lax is safer for redirects
+        sameSite: 'strict', // Strict provides stronger CSRF protection for API-driven apps
         secure: process.env.NODE_ENV === 'production'
     }
 }));
@@ -60,7 +60,7 @@ app.use('/api/dashboard', dashboardRoutes);
 // (express.static already handles this via public/index.html)
 
 // Start Server only if not running on Vercel
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`Server is running on port ${PORT}`);

@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('profileForm').addEventListener('submit', handleProfileSave);
+
+    const pwForm = document.getElementById('changePasswordForm');
+    if (pwForm) pwForm.addEventListener('submit', handlePasswordChange);
 });
 
 async function loadSettingsProfile() {
@@ -92,6 +95,11 @@ async function loadGroupSettings() {
             const membersList = document.getElementById('groupMembersList');
             let html = '';
             const currentUserId = parseInt(getUserId());
+            // Guard: if userId couldn't be parsed, we can't do admin checks
+            if (!currentUserId || isNaN(currentUserId)) {
+                console.warn('Could not determine current user ID from localStorage');
+                return;
+            }
             let currentUserIsAdmin = false;
             
             res.data.members.forEach(m => {
@@ -101,7 +109,7 @@ async function loadGroupSettings() {
                 
                 html += `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        ${m.name} ${isMe ? '(You)' : ''}
+                        ${esc(m.name)} ${isMe ? '(You)' : ''}
                         ${isAdmin ? '<span class="badge bg-primary rounded-pill">Admin</span>' : ''}
                     </li>
                 `;
@@ -153,8 +161,8 @@ async function loadJoinRequests(groupId) {
                 html += `
                     <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                         <div>
-                            <div class="fw-bold">${req.user_name}</div>
-                            <div class="small text-muted">${req.user_email}</div>
+                            <div class="fw-bold">${esc(req.user_name)}</div>
+                            <div class="small text-muted">${esc(req.user_email)}</div>
                         </div>
                         <div>
                             <button class="btn btn-sm btn-success me-1" onclick="processJoinRequest(${req.request_id}, 'approved')"><i class="bi bi-check-lg"></i></button>
@@ -193,8 +201,25 @@ function copyGroupCode() {
     });
 }
 
-function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('activeGroupId');
-    window.location.href = '/pages/login.html';
+async function handlePasswordChange(e) {
+    e.preventDefault();
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNew = document.getElementById('confirmNewPassword').value;
+
+    if (newPassword !== confirmNew) {
+        alert('New passwords do not match');
+        return;
+    }
+
+    try {
+        await apiFetch('/api/users/me/password', {
+            method: 'PUT',
+            body: { currentPassword, newPassword }
+        });
+        alert('Password changed successfully!');
+        e.target.reset();
+    } catch (error) {
+        alert(error.message || 'Failed to change password');
+    }
 }

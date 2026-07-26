@@ -128,10 +128,10 @@ function renderMembers(members) {
         html += `
             <tr>
                 <td class="ps-4">
-                    <div class="fw-medium">${member.name}${youTag}</div>
-                    <div class="small text-muted">${member.email}</div>
+                    <div class="fw-medium">${esc(member.name)}${youTag}</div>
+                    <div class="small text-muted">${esc(member.email)}</div>
                 </td>
-                <td><span class="badge bg-${badgeColor}">${member.role}</span></td>
+                <td><span class="badge bg-${badgeColor}">${esc(member.role)}</span></td>
                 <td class="text-end pe-4">
                     ${member.user_id != currentUserId ? `<button class="btn btn-sm btn-outline-danger" onclick="removeMember(${member.user_id})"><i class="bi bi-person-x"></i></button>` : ''}
                 </td>
@@ -157,7 +157,7 @@ function renderLogs(logs) {
         html += `
             <li class="mb-3 border-start border-2 border-primary ps-3">
                 <div class="small text-muted mb-1">${date}</div>
-                <div><strong>${log.user_name}</strong>: ${log.description}</div>
+                <div><strong>${esc(log.user_name)}</strong>: ${esc(log.description)}</div>
             </li>
         `;
     });

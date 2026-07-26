@@ -27,7 +27,7 @@ Instead of focusing only on financial transactions, RoomSync integrates everyday
 - Daily Meal Intimation
 - Shared Expense Tracking
 - Expense Splitting
-- Cash & UPI Payment Recording
+- Cash & UPI Payment Recording (with Undo functionality)
 - Manual Balance Adjustments
 - Settlement Calculation
 - SQL-based Spending Analytics
@@ -199,6 +199,9 @@ The following business rules define the operational constraints of the RoomSync 
 ## 7. Functional Requirements
 
 ### 7.1 User & Group Management
+- **Invite Links & QR Codes**: Users can generate a unique invite link and QR code to easily share with roommates.
+- **Join Workflows**: Admins can toggle between "Direct Join" (anyone with the link joins instantly) and "Admin Approval" (users request to join and must be approved).
+- **Group Settings Panel**: Admins can manage joining preferences, view pending join requests, and approve/reject them.
 - User registration/login (email + password, hashed with bcrypt)
 - Create a household/group; generate a unique group code
 - Join an existing group via group code
@@ -225,6 +228,8 @@ The following business rules define the operational constraints of the RoomSync 
 - Edit/delete an expense (with recalculation of balances)
 
 ### 7.5 Payment Tracking
+- **Record Payments**: Users can log cash or UPI transfers to settle balances.
+- **Undo Payments**: Users can undo accidental payments, which recalculates balances automatically.
 - Record a payment from User A to User B: amount, mode (Cash/UPI), date, optional note
 - Payment updates the running balance between the two users
 - View payment history (filter by member/date)

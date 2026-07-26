@@ -26,6 +26,19 @@ const UserModel = {
             'UPDATE users SET name = ?, phone = ?, upi_id = ? WHERE user_id = ?',
             [name, phone, upi_id, userId]
         );
+    },
+
+    async findByIdWithHash(userId) {
+        // Like findById but includes password_hash — only for password change verification
+        const rows = await db.all('SELECT * FROM users WHERE user_id = ?', [userId]);
+        return rows[0];
+    },
+
+    async updatePassword(userId, newHash) {
+        await db.run(
+            'UPDATE users SET password_hash = ? WHERE user_id = ?',
+            [newHash, userId]
+        );
     }
 };
 

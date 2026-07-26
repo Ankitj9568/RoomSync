@@ -68,7 +68,7 @@ function renderDashboardOverview(data) {
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <div>
                     <h6 class="mb-0"><i class="bi ${icon} me-2"></i>${capType}</h6>
-                    <small class="text-muted d-block">${nextMeal.veg_item || ''}${nextMeal.nonveg_item ? ', ' + nextMeal.nonveg_item : ''}</small>
+                    <small class="text-muted d-block">${esc(nextMeal.veg_item) || ''}${nextMeal.nonveg_item ? ', ' + esc(nextMeal.nonveg_item) : ''}</small>
                 </div>
             </div>
             <div class="text-end">
@@ -133,7 +133,7 @@ function renderActivities(activities) {
             </div>
             <div class="flex-grow-1">
                 <div class="fw-medium text-dark">${actionFriendly}</div>
-                <div class="text-muted small">${act.description || ''}</div>
+                <div class="text-muted small">${esc(act.description) || ''}</div>
             </div>
             <div class="text-muted small text-end" style="font-size: 0.75rem;">
                 ${dateStr.split(',')[0]}<br>${dateStr.split(',')[1] || ''}

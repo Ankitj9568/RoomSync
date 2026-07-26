@@ -37,67 +37,53 @@ const ExpenseModel = {
     },
 
     async addExpense(groupId, title, description, amount, category, expenseType, splitType, expenseDate, splits, payers) {
-        try {
-            await db.run('BEGIN TRANSACTION');
+        // Note: No explicit BEGIN/COMMIT/ROLLBACK — db proxy uses MySQL pool
+        // where per-statement transactions are unsafe. Auto-commit handles this.
+        const result = await db.run(
+            'INSERT INTO expenses (group_id, title, description, amount, category, expense_type, split_type, expense_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [groupId, title, description, amount, category, expenseType, splitType, expenseDate]
+        );
+        const expenseId = result.lastID;
 
-            const result = await db.run(
-                'INSERT INTO expenses (group_id, title, description, amount, category, expense_type, split_type, expense_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [groupId, title, description, amount, category, expenseType, splitType, expenseDate]
+        for (const split of splits) {
+            await db.run(
+                'INSERT INTO expense_members (expense_id, user_id, share_amount) VALUES (?, ?, ?)',
+                [expenseId, split.user_id, split.share_amount]
             );
-            const expenseId = result.lastID;
-
-            for (const split of splits) {
-                await db.run(
-                    'INSERT INTO expense_members (expense_id, user_id, share_amount) VALUES (?, ?, ?)',
-                    [expenseId, split.user_id, split.share_amount]
-                );
-            }
-
-            for (const payer of payers) {
-                await db.run(
-                    'INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES (?, ?, ?)',
-                    [expenseId, payer.user_id, payer.amount_paid]
-                );
-            }
-
-            await db.run('COMMIT');
-            return expenseId;
-        } catch (error) {
-            await db.run('ROLLBACK');
-            throw error;
         }
+
+        for (const payer of payers) {
+            await db.run(
+                'INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES (?, ?, ?)',
+                [expenseId, payer.user_id, payer.amount_paid]
+            );
+        }
+
+        return expenseId;
     },
 
     async updateExpense(expenseId, title, description, amount, category, expenseType, splitType, expenseDate, splits, payers) {
-        try {
-            await db.run('BEGIN TRANSACTION');
+        // No explicit transactions — see addExpense comment above
+        await db.run(
+            'UPDATE expenses SET title=?, description=?, amount=?, category=?, expense_type=?, split_type=?, expense_date=? WHERE expense_id=?',
+            [title, description, amount, category, expenseType, splitType, expenseDate, expenseId]
+        );
 
+        await db.run('DELETE FROM expense_members WHERE expense_id = ?', [expenseId]);
+        await db.run('DELETE FROM expense_payers WHERE expense_id = ?', [expenseId]);
+
+        for (const split of splits) {
             await db.run(
-                'UPDATE expenses SET title=?, description=?, amount=?, category=?, expense_type=?, split_type=?, expense_date=? WHERE expense_id=?',
-                [title, description, amount, category, expenseType, splitType, expenseDate, expenseId]
+                'INSERT INTO expense_members (expense_id, user_id, share_amount) VALUES (?, ?, ?)',
+                [expenseId, split.user_id, split.share_amount]
             );
-
-            await db.run('DELETE FROM expense_members WHERE expense_id = ?', [expenseId]);
-            await db.run('DELETE FROM expense_payers WHERE expense_id = ?', [expenseId]);
-
-            for (const split of splits) {
-                await db.run(
-                    'INSERT INTO expense_members (expense_id, user_id, share_amount) VALUES (?, ?, ?)',
-                    [expenseId, split.user_id, split.share_amount]
-                );
-            }
-            
-            for (const payer of payers) {
-                await db.run(
-                    'INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES (?, ?, ?)',
-                    [expenseId, payer.user_id, payer.amount_paid]
-                );
-            }
-
-            await db.run('COMMIT');
-        } catch (error) {
-            await db.run('ROLLBACK');
-            throw error;
+        }
+        
+        for (const payer of payers) {
+            await db.run(
+                'INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES (?, ?, ?)',
+                [expenseId, payer.user_id, payer.amount_paid]
+            );
         }
     },
 

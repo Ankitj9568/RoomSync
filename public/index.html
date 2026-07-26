@@ -177,14 +177,30 @@
         }
 
         /* Features Section */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            padding: 4rem 5%;
-            max-width: 1400px;
-            margin: 0 auto;
+        .features-slider-wrapper {
             width: 100%;
+            padding: 2rem 0;
+            position: relative;
+        }
+        .features-slider-wrapper h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .features {
+            display: flex;
+            gap: 2rem;
+            padding: 2rem 5%;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            scroll-padding: 0 5%;
+            margin: 0 auto;
+            width: max-content;
+            max-width: 100%;
+        }
+        .features::-webkit-scrollbar {
+            display: none;
         }
 
         .feature-card {
@@ -195,6 +211,8 @@
             padding: 2rem;
             border-radius: 1.5rem;
             transition: transform 0.3s ease;
+            flex: 0 0 320px;
+            scroll-snap-align: start;
         }
 
         .feature-card:hover {
@@ -232,13 +250,122 @@
                 display: none;
             }
             .hero {
-                padding: 4rem 5%;
+                padding: 2rem 5% 4rem;
             }
             .cta-group {
                 flex-direction: column;
                 width: 100%;
                 max-width: 300px;
+                margin: 0 auto;
             }
+            .feature-card {
+                flex: 0 0 300px;
+            }
+            .steps-container, .about-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero h1 {
+                font-size: clamp(2rem, 8vw, 2.5rem);
+            }
+        }
+
+        /* How It Works Section */
+        .how-it-works {
+            padding: 5rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            text-align: center;
+        }
+
+        .how-it-works h2 {
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .step-card {
+            background: rgba(30, 41, 59, 0.4);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        /* About Section */
+        .about-section {
+            padding: 5rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .about-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .about-card {
+            background: rgba(30, 41, 59, 0.4);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .about-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(14, 165, 233, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #38bdf8;
+            margin: 0 auto 1.5rem auto;
+        }
+        .about-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .about-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(15, 23, 42, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem 5%;
+            text-align: center;
+            margin-top: auto;
+            width: 100%;
+        }
+        
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -275,22 +402,101 @@
         </div>
     </main>
 
-    <section class="features">
-        <div class="feature-card">
-            <div class="feature-icon"><i class="bi bi-receipt"></i></div>
-            <h3>Expense Splitting</h3>
-            <p>Log shared expenses instantly. Automatically split equally or enter custom amounts. Never lose track of who owes who.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon"><i class="bi bi-cup-hot"></i></div>
-            <h3>Meal Management</h3>
-            <p>Know exactly who's eating lunch or dinner every day. Avoid food waste and keep the household menu organized.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon"><i class="bi bi-arrow-left-right"></i></div>
-            <h3>Smart Settlements</h3>
-            <p>Our algorithm optimizes debts to minimize transactions. Settle up with a single tap and record cash or UPI payments.</p>
+    <div class="features-slider-wrapper">
+        <h2>Features</h2>
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-receipt"></i></div>
+                <h3>Expense Splitting</h3>
+                <p>Log shared expenses instantly. Automatically split equally or enter custom amounts. Never lose track of who owes who.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-cup-hot"></i></div>
+                <h3>Meal Management</h3>
+                <p>Know exactly who's eating lunch or dinner every day. Avoid food waste and keep the household menu organized.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-arrow-left-right"></i></div>
+                <h3>Smart Settlements</h3>
+                <p>Our algorithm optimizes debts to minimize transactions. Settle up with a single tap and record cash or UPI payments.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-cart"></i></div>
+                <h3>Shared Groceries</h3>
+                <p>Maintain a collaborative shopping list. Check off items in real-time and effortlessly track who paid for what.</p>
+            </div>
+        </section>
+    </div>
+
+    <section class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps-container">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Create a Group</h3>
+                <p style="color: var(--text-muted); margin-top: 0.75rem;">Sign up and create a digital home for your flat.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>Invite Roommates</h3>
+                <p style="color: var(--text-muted); margin-top: 0.75rem;">Share your unique invite code with your flatmates.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Live Peacefully</h3>
+                <p style="color: var(--text-muted); margin-top: 0.75rem;">Start logging expenses, meals, and groceries immediately.</p>
+            </div>
         </div>
     </section>
+
+    <section class="about-section">
+        <h2>About The Project</h2>
+        <div class="about-grid">
+            <div class="about-card">
+                <div class="about-icon"><i class="bi bi-bullseye"></i></div>
+                <h3>Our Mission</h3>
+                <p>To eliminate the friction of shared living by providing a seamless, automated platform for managing expenses, meals, and daily chores.</p>
+            </div>
+            <div class="about-card">
+                <div class="about-icon"><i class="bi bi-eye"></i></div>
+                <h3>Our Vision</h3>
+                <p>A world where roommates can focus on building friendships and memories, rather than arguing over who bought the last carton of milk.</p>
+            </div>
+            <div class="about-card">
+                <div class="about-icon"><i class="bi bi-person-workspace"></i></div>
+                <h3>Developer</h3>
+                <p style="color: var(--text-main); font-weight: 600; font-size: 1.1rem;">Ankit Kumar Jha</p>
+                <p style="margin-top: 0.5rem; font-size: 0.95rem;">B.Tech IT</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p class="footer-text">&copy; 2026 RoomSync. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Auto-scroll features slider
+        document.addEventListener('DOMContentLoaded', () => {
+            const slider = document.querySelector('.features');
+            
+            setInterval(() => {
+                if (!slider) return;
+                
+                const cardWidth = slider.querySelector('.feature-card').offsetWidth + 32; // card width + 2rem gap
+                const maxScroll = slider.scrollWidth - slider.clientWidth;
+                
+                if (maxScroll <= 5) return; // Don't slide if everything fits
+                
+                if (slider.scrollLeft >= maxScroll - 10) {
+                    // If at the end, smoothly scroll back to the start
+                    slider.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    // Scroll to the next card
+                    slider.scrollTo({ left: slider.scrollLeft + cardWidth, behavior: 'smooth' });
+                }
+            }, 3000); // Slides every 3 seconds
+        });
+    </script>
 </body>
 </html>

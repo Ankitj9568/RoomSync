@@ -63,11 +63,11 @@ function renderShoppingList(items) {
                 <li class="list-group-item d-flex justify-content-between align-items-center py-3 bg-light text-muted">
                     <div>
                         <input class="form-check-input me-2" type="checkbox" checked onchange="updateStatus(${item.item_id}, 'pending')">
-                        <del>${item.item_name}</del>
+                        <del>${esc(item.item_name)}</del>
                         <span class="badge bg-success ms-2">Purchased</span>
                     </div>
                     <div class="d-flex align-items-center">
-                        <span class="small me-3">Assigned to: ${item.assigned_name || 'Anyone'}</span>
+                        <span class="small me-3">Assigned to: ${item.assigned_name ? esc(item.assigned_name) : 'Anyone'}</span>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${item.item_id})"><i class="bi bi-trash"></i></button>
                     </div>
                 </li>
@@ -77,11 +77,11 @@ function renderShoppingList(items) {
                 <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                     <div>
                         <input class="form-check-input me-2" type="checkbox" onchange="updateStatus(${item.item_id}, 'purchased')">
-                        <strong>${item.item_name}</strong>
+                        <strong>${esc(item.item_name)}</strong>
                         <span class="badge bg-warning text-dark ms-2">Pending</span>
                     </div>
                     <div class="d-flex align-items-center">
-                        <span class="text-muted-custom small me-3">Assigned to: ${item.assigned_name || 'Anyone'}</span>
+                        <span class="text-muted-custom small me-3">Assigned to: ${item.assigned_name ? esc(item.assigned_name) : 'Anyone'}</span>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${item.item_id})"><i class="bi bi-trash"></i></button>
                     </div>
                 </li>

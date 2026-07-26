@@ -14,24 +14,28 @@ const settlementCalculator = {
         // Initialize balances for each user: user_id -> balance
         // Positive balance = they are owed money
         // Negative balance = they owe money
+        // NOTE: We use String(id) as keys to avoid Number vs String key mismatch
+        // when MySQL returns IDs as numbers vs SQLite returning integers.
         const balances = {};
         members.forEach(m => {
-            balances[m.user_id] = 0;
+            balances[String(m.user_id)] = 0;
         });
 
         // 1. Process Expenses
         expenses.forEach(exp => {
             // Add what people paid
             exp.payers.forEach(payer => {
-                if (balances[payer.user_id] !== undefined) {
-                    balances[payer.user_id] += parseFloat(payer.amount_paid);
+                const key = String(payer.user_id);
+                if (balances[key] !== undefined) {
+                    balances[key] += parseFloat(payer.amount_paid);
                 }
             });
 
             // Subtract what people owe (their share)
             exp.splits.forEach(split => {
-                if (balances[split.user_id] !== undefined) {
-                    balances[split.user_id] -= parseFloat(split.share_amount);
+                const key = String(split.user_id);
+                if (balances[key] !== undefined) {
+                    balances[key] -= parseFloat(split.share_amount);
                 }
             });
         });
@@ -43,20 +47,22 @@ const settlementCalculator = {
             // Add what people paid
             if (groc.contributors && groc.contributors.length > 0) {
                 groc.contributors.forEach(c => {
-                    if (balances[c.user_id] !== undefined) {
-                        balances[c.user_id] += parseFloat(c.amount_paid);
+                    const key = String(c.user_id);
+                    if (balances[key] !== undefined) {
+                        balances[key] += parseFloat(c.amount_paid);
                     }
                 });
             } else {
-                if (balances[groc.purchased_by] !== undefined) {
-                    balances[groc.purchased_by] += totalAmount;
+                const key = String(groc.purchased_by);
+                if (balances[key] !== undefined) {
+                    balances[key] += totalAmount;
                 }
             }
 
             // Subtract everyone's equal share (assuming groceries are shared equally among all members)
             const splitAmount = totalAmount / members.length;
             members.forEach(m => {
-                balances[m.user_id] -= splitAmount;
+                balances[String(m.user_id)] -= splitAmount;
             });
         });
 
@@ -67,11 +73,13 @@ const settlementCalculator = {
         payments.forEach(pay => {
             if (pay.status === 'approved') {
                 const amount = parseFloat(pay.amount);
-                if (balances[pay.paid_by] !== undefined) {
-                    balances[pay.paid_by] += amount;
+                const fromKey = String(pay.paid_by);
+                const toKey = String(pay.paid_to);
+                if (balances[fromKey] !== undefined) {
+                    balances[fromKey] += amount;
                 }
-                if (balances[pay.paid_to] !== undefined) {
-                    balances[pay.paid_to] -= amount;
+                if (balances[toKey] !== undefined) {
+                    balances[toKey] -= amount;
                 }
             }
         });

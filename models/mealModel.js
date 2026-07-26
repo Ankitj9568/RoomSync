@@ -20,14 +20,24 @@ const MealModel = {
     },
 
     async upsertMeal(groupId, userId, date, mealType, isAttending, dietPreference = 'veg', guestCount = 0) {
-        await db.run(`
-            INSERT INTO meals (group_id, user_id, meal_date, meal_type, is_attending, diet_preference, guest_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(user_id, meal_date, meal_type) DO UPDATE SET
-                is_attending = excluded.is_attending,
-                diet_preference = excluded.diet_preference,
-                guest_count = excluded.guest_count
-        `, [groupId, userId, date, mealType, isAttending, dietPreference, guestCount]);
+        // NOTE: We use check-then-insert/update instead of ON CONFLICT...DO UPDATE SET
+        // because that syntax is SQLite-specific. MySQL requires ON DUPLICATE KEY UPDATE,
+        // and the db proxy doesn't support multi-dialect upserts natively.
+        const existing = await db.get(
+            'SELECT meal_id FROM meals WHERE user_id = ? AND meal_date = ? AND meal_type = ?',
+            [userId, date, mealType]
+        );
+        if (existing) {
+            await db.run(
+                'UPDATE meals SET is_attending = ?, diet_preference = ?, guest_count = ? WHERE meal_id = ?',
+                [isAttending, dietPreference, guestCount, existing.meal_id]
+            );
+        } else {
+            await db.run(
+                'INSERT INTO meals (group_id, user_id, meal_date, meal_type, is_attending, diet_preference, guest_count) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [groupId, userId, date, mealType, isAttending, dietPreference, guestCount]
+            );
+        }
     }
 };
 

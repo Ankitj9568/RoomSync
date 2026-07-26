@@ -33,8 +33,11 @@ const expenseController = {
             if (!group_id || !title || !amount || !split_type || !expense_date || !splits) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
-            if (Number(amount) <= 0) {
-                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            if (title.length > 100 || (description && description.length > 500)) {
+                return res.status(400).json({ success: false, message: 'Title or description is too long' });
+            }
+            if (isNaN(amount) || Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
             }
 
             const isMember = await GroupModel.isMember(group_id, userId);
@@ -77,8 +80,8 @@ const expenseController = {
                 await ActivityLogModel.create(
                     group_id,
                     userId,
-                    'EXPENSE_ADDED',
-                    `${req.session.userName} added "${title}" (₹ ${amount})`
+                    'ADDED_EXPENSE',
+                    `${req.session.userName || 'Someone'} added "${title}" (₹ ${amount})`
                 );
             } catch (logErr) {
                 console.error("Failed to log activity:", logErr);
@@ -97,12 +100,15 @@ const expenseController = {
             const { title, description, amount, category, expense_type, split_type, expense_date, splits, payers } = req.body;
             const userId = req.session.userId;
 
+            if (title && title.length > 100 || (description && description.length > 500)) {
+                return res.status(400).json({ success: false, message: 'Title or description is too long' });
+            }
             const expense = await ExpenseModel.getExpenseById(expenseId);
             if (!expense) {
                 return res.status(404).json({ success: false, message: 'Expense not found' });
             }
-            if (Number(amount) <= 0) {
-                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            if (isNaN(amount) || Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
             }
 
             const isMember = await GroupModel.isMember(expense.group_id, userId);
@@ -154,9 +160,17 @@ const expenseController = {
                 return res.status(404).json({ success: false, message: 'Expense not found' });
             }
 
-            const isMember = await GroupModel.isMember(expense.group_id, userId);
-            if (!isMember) {
+            const role = await GroupModel.isMember(expense.group_id, userId);
+            if (!role) {
                 return res.status(403).json({ success: false, message: 'Only group members can delete' });
+            }
+
+            // Only a payer of this expense or a group admin can delete it
+            const fullExpense = await ExpenseModel.getExpensesByGroup(expense.group_id);
+            const thisExpense = fullExpense.find(e => e.expense_id == expenseId);
+            const isPayer = thisExpense && thisExpense.payers.some(p => Number(p.user_id) === Number(userId));
+            if (!isPayer && role.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Only a payer or admin can delete this expense' });
             }
 
             await ExpenseModel.deleteExpense(expenseId);

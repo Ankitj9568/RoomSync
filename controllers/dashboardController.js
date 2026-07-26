@@ -43,7 +43,7 @@ const dashboardController = {
 
             // 2. My Balance (Settlements)
             const settlementData = await settlementCalculator.calculateBalances(group_id);
-            const myBalance = settlementData.balances[userId] || 0; // positive = owed, negative = owes
+            const myBalance = settlementData.balances[String(userId)] || 0; // use String key to match calculator
 
             // 3. Next Meal
             const today = new Date().toISOString().split('T')[0];
@@ -51,11 +51,13 @@ const dashboardController = {
             
             let nextMeal = null;
             if (menu && menu.length > 0) {
-                // Determine if lunch is over (e.g. past 2 PM)
-                const hour = new Date().getHours();
+                // Determine if lunch/dinner is over using IST time (server runs UTC)
+                const ISTHour = parseInt(new Date().toLocaleString('en-IN', {
+                    timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false
+                }));
                 const upcoming = menu.find(m => {
-                    if (m.meal_type === 'lunch' && hour < 14) return true;
-                    if (m.meal_type === 'dinner' && hour < 22) return true;
+                    if (m.meal_type === 'lunch' && ISTHour < 14) return true;
+                    if (m.meal_type === 'dinner' && ISTHour < 22) return true;
                     return false;
                 });
                 if (upcoming) {
@@ -107,23 +109,24 @@ const dashboardController = {
                 categoryTotals['grocery'] = (categoryTotals['grocery'] || 0) + parseFloat(g.amount);
             });
 
-            // Trend over last 7 days
+            // Trend over last 7 days (using IST dates to match stored data)
             const trend = [];
             for (let i = 6; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
-                const dateStr = d.toISOString().split('T')[0];
+                // Use IST date string (YYYY-MM-DD) for comparison with stored dates
+                const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
                 
                 let dayTotal = 0;
                 expenses.forEach(e => {
-                    if (e.expense_date.startsWith(dateStr) && e.expense_type !== 'transfer') dayTotal += parseFloat(e.amount);
+                    if (e.expense_date && e.expense_date.startsWith(dateStr) && e.expense_type !== 'transfer') dayTotal += parseFloat(e.amount);
                 });
                 groceries.forEach(g => {
-                    if (g.purchase_date.startsWith(dateStr)) dayTotal += parseFloat(g.amount);
+                    if (g.purchase_date && g.purchase_date.startsWith(dateStr)) dayTotal += parseFloat(g.amount);
                 });
                 
                 trend.push({
-                    date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                    date: d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Kolkata' }),
                     amount: dayTotal
                 });
             }

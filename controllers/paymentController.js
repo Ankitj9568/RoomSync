@@ -81,10 +81,13 @@ const paymentController = {
             if (!group_id || !paid_to || !amount || !payment_mode || !payment_date) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
-            if (Number(amount) <= 0) {
-                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            if (note && note.length > 500) {
+                return res.status(400).json({ success: false, message: 'Note is too long' });
             }
-            if (paidBy === Number(paid_to)) {
+            if (isNaN(amount) || Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
+            }
+            if (Number(paidBy) === Number(paid_to)) {
                 return res.status(400).json({ success: false, message: 'Cannot pay yourself' });
             }
 
@@ -111,7 +114,7 @@ const paymentController = {
                 return res.status(404).json({ success: false, message: 'Payment not found' });
             }
 
-            if (payment.paid_by !== userId) {
+            if (Number(payment.paid_by) !== Number(userId)) {
                 return res.status(403).json({ success: false, message: 'Only payer can delete' });
             }
 
@@ -138,7 +141,7 @@ const paymentController = {
                 return res.status(404).json({ success: false, message: 'Payment not found' });
             }
 
-            if (payment.paid_to !== userId) {
+            if (Number(payment.paid_to) !== Number(userId)) {
                 return res.status(403).json({ success: false, message: 'Only payee can verify payment' });
             }
 

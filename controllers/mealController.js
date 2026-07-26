@@ -42,21 +42,25 @@ const mealController = {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
 
-            // Check cutoff time
+            // Check cutoff time — use IST (Asia/Kolkata) since users are in India
             const settings = await GroupModel.getSettings(group_id);
             const cutoffTime = settings ? settings.meal_cutoff_time : '10:00:00';
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+
+            // Get current time in IST regardless of server timezone
+            const ISTString = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+            const ISTDate = new Date(ISTString);
+            const todayIST = ISTDate.toLocaleDateString('en-CA'); // YYYY-MM-DD in IST
             
-            if (meal_date === todayStr) {
-                const currentHour = now.getHours();
-                const currentMin = now.getMinutes();
+            if (meal_date === todayIST) {
+                const currentHour = ISTDate.getHours();
+                const currentMin = ISTDate.getMinutes();
                 const [cutoffHour, cutoffMin] = cutoffTime.split(':').map(Number);
 
                 if (currentHour > cutoffHour || (currentHour === cutoffHour && currentMin >= cutoffMin)) {
                     return res.status(403).json({ success: false, message: 'Past cutoff time' });
                 }
-            } else if (meal_date < todayStr) {
+            } else if (meal_date < todayIST) {
                 return res.status(403).json({ success: false, message: 'Cannot edit past meals' });
             }
 
@@ -97,6 +101,9 @@ const mealController = {
 
             if (!group_id || !date || !type || !veg_item) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
+            }
+            if (veg_item.length > 200 || (nonveg_item && nonveg_item.length > 200)) {
+                return res.status(400).json({ success: false, message: 'Menu item names are too long' });
             }
 
             const isMember = await GroupModel.isMember(group_id, userId);

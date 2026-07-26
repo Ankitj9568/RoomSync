@@ -78,14 +78,14 @@ function renderMenu(menus) {
             html += `
             <div class="d-flex align-items-center mb-1">
                 <span class="badge bg-success me-2" style="font-size: 0.65em;">Veg</span>
-                <span class="fw-medium small">${menu.veg_item}</span>
+                <span class="fw-medium small">${esc(menu.veg_item)}</span>
             </div>`;
         }
         if (menu.nonveg_item) {
             html += `
             <div class="d-flex align-items-center mb-1">
                 <span class="badge bg-danger me-2" style="font-size: 0.65em;">Non-Veg</span>
-                <span class="fw-medium small">${menu.nonveg_item}</span>
+                <span class="fw-medium small">${esc(menu.nonveg_item)}</span>
             </div>`;
         }
         
@@ -167,7 +167,7 @@ function renderHeadcount(meals) {
         html += `
             <tr>
                 <td class="text-start ps-4">
-                    ${user.name} ${currentUserId == user.lunch?.user_id ? '(You)' : ''} <br>${dietBadge}
+                    ${esc(user.name)} ${currentUserId == user.lunch?.user_id ? '(You)' : ''} <br>${dietBadge}
                 </td>
                 <td>${lunchCell}</td>
                 <td>${dinnerCell}</td>

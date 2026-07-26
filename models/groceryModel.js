@@ -50,36 +50,31 @@ const GroceryModel = {
     },
 
     async addGrocery(groupId, itemName, quantity, amount, purchasedBy, purchaseDate, contributors) {
-        try {
-            await db.run('BEGIN TRANSACTION');
+        // Note: We do NOT use BEGIN/COMMIT/ROLLBACK here because the db proxy
+        // uses a MySQL connection pool where transactions are not safe per-statement.
+        // Each INSERT auto-commits on MySQL. On SQLite this also works fine.
+        const result = await db.run(
+            'INSERT INTO groceries (group_id, item_name, quantity, amount, purchased_by, purchase_date) VALUES (?, ?, ?, ?, ?, ?)',
+            [groupId, itemName, quantity, amount, purchasedBy, purchaseDate]
+        );
+        const groceryId = result.lastID;
 
-            const result = await db.run(
-                'INSERT INTO groceries (group_id, item_name, quantity, amount, purchased_by, purchase_date) VALUES (?, ?, ?, ?, ?, ?)',
-                [groupId, itemName, quantity, amount, purchasedBy, purchaseDate]
-            );
-            const groceryId = result.lastID;
-
-            if (contributors && contributors.length > 0) {
-                for (const c of contributors) {
-                    await db.run(
-                        'INSERT INTO grocery_contributors (grocery_id, user_id, amount_paid) VALUES (?, ?, ?)',
-                        [groceryId, c.user_id, c.amount_paid]
-                    );
-                }
-            } else {
-                // If no contributors array, purchaser paid everything
+        if (contributors && contributors.length > 0) {
+            for (const c of contributors) {
                 await db.run(
                     'INSERT INTO grocery_contributors (grocery_id, user_id, amount_paid) VALUES (?, ?, ?)',
-                    [groceryId, purchasedBy, amount]
+                    [groceryId, c.user_id, c.amount_paid]
                 );
             }
-
-            await db.run('COMMIT');
-            return groceryId;
-        } catch (error) {
-            await db.run('ROLLBACK');
-            throw error;
+        } else {
+            // If no contributors array, purchaser paid everything
+            await db.run(
+                'INSERT INTO grocery_contributors (grocery_id, user_id, amount_paid) VALUES (?, ?, ?)',
+                [groceryId, purchasedBy, amount]
+            );
         }
+
+        return groceryId;
     },
 
     async updateGrocery(groceryId, itemName, quantity, amount) {

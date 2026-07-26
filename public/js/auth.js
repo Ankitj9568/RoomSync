@@ -22,12 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     let returnTo = urlParams.get('returnTo');
                     if (returnTo) {
                         returnTo = decodeURIComponent(returnTo);
-                        // Validate to prevent Open Redirect
-                        if (!returnTo.startsWith('/') && !returnTo.endsWith('.html')) {
-                            returnTo = 'dashboard.html';
-                        }
+                        // Strict same-origin check to prevent open redirect (e.g. //evil.com/page.html)
+                        try {
+                            const parsed = new URL(returnTo, window.location.origin);
+                            if (parsed.origin !== window.location.origin) returnTo = null;
+                        } catch { returnTo = null; }
                     }
-                    window.location.href = returnTo ? returnTo : 'dashboard.html';
+                    window.location.href = returnTo || '/pages/dashboard.html';
                 }
             } catch (error) {
                 // apiFetch already shows error message
@@ -62,12 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     let returnTo = urlParams.get('returnTo');
                     if (returnTo) {
                         returnTo = decodeURIComponent(returnTo);
-                        // Validate to prevent Open Redirect
-                        if (!returnTo.startsWith('/') && !returnTo.endsWith('.html')) {
-                            returnTo = 'dashboard.html';
-                        }
+                        try {
+                            const parsed = new URL(returnTo, window.location.origin);
+                            if (parsed.origin !== window.location.origin) returnTo = null;
+                        } catch { returnTo = null; }
                     }
-                    window.location.href = returnTo ? returnTo : 'dashboard.html';
+                    window.location.href = returnTo || '/pages/dashboard.html';
                 }
             } catch (error) {
                 // Error shown by apiFetch

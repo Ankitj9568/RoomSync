@@ -29,7 +29,7 @@ const shoppingListController = {
             const { group_id, item_name, assigned_to } = req.body;
             const userId = req.session.userId;
 
-            if (!group_id || !item_name) {
+            if (!group_id || !item_name || String(item_name).trim() === '') {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
 
@@ -67,6 +67,9 @@ const shoppingListController = {
 
             if (item.status === 'purchased' && status !== 'pending') {
                 return res.status(400).json({ success: false, message: 'Item already purchased' });
+            }
+            if (status !== undefined && !['pending', 'purchased'].includes(status)) {
+                return res.status(400).json({ success: false, message: 'Invalid status' });
             }
             
             const finalName = item_name !== undefined ? item_name : item.item_name;

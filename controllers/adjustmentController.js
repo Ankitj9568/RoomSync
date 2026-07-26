@@ -32,13 +32,23 @@ const adjustmentController = {
             if (!group_id || !from_user || !to_user || !amount || !reason) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
-            if (from_user === to_user) {
+            if (reason.length > 500) {
+                return res.status(400).json({ success: false, message: 'Reason is too long' });
+            }
+            if (isNaN(amount) || Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
+            }
+            if (Number(from_user) === Number(to_user)) {
                 return res.status(400).json({ success: false, message: 'Cannot adjust balance with yourself' });
             }
 
-            const isMember = await GroupModel.isMember(group_id, userId);
-            if (!isMember) {
+            const role = await GroupModel.isMember(group_id, userId);
+            if (!role) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+            // Only admins can create manual balance adjustments
+            if (role.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Only admins can create adjustments' });
             }
 
             const adjustmentId = await AdjustmentModel.addAdjustment(group_id, from_user, to_user, amount, reason, userId);
@@ -60,7 +70,7 @@ const adjustmentController = {
             }
 
             // Only the creator can delete it
-            if (adjustment.created_by !== userId) {
+            if (Number(adjustment.created_by) !== Number(userId)) {
                 return res.status(403).json({ success: false, message: 'Only creator can delete' });
             }
 

@@ -263,6 +263,16 @@ const groupController = {
                 return res.status(400).json({ success: false, message: 'Cannot remove yourself using this method' });
             }
 
+            // Guard against removing the last admin — group would be unmanageable
+            const targetRole = await GroupModel.isMember(group_id, user_id);
+            if (targetRole && targetRole.role === 'admin') {
+                const allMembers = await GroupModel.getGroupMembers(group_id);
+                const adminCount = allMembers.filter(m => m.role === 'admin').length;
+                if (adminCount <= 1) {
+                    return res.status(400).json({ success: false, message: 'Cannot remove the only admin. Assign another admin first.' });
+                }
+            }
+
             await GroupModel.removeMember(group_id, user_id);
             await ActivityLogModel.create(group_id, currentUserId, 'remove_member', `Removed a member from the group`);
 

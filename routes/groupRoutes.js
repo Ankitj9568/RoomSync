@@ -3,8 +3,36 @@ const router = express.Router();
 const groupController = require('../controllers/groupController');
 const authMiddleware = require('../middleware/authMiddleware');
 
+const rateLimitMap = new Map();
+function groupRateLimit(req, res, next) {
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    const maxAttempts = 30; // Slightly higher than auth, but prevents spam
+
+    if (!rateLimitMap.has(ip)) {
+        rateLimitMap.set(ip, { count: 1, firstAttempt: now });
+        return next();
+    }
+
+    const entry = rateLimitMap.get(ip);
+    if (now - entry.firstAttempt > windowMs) {
+        rateLimitMap.set(ip, { count: 1, firstAttempt: now });
+        return next();
+    }
+
+    entry.count++;
+    if (entry.count > maxAttempts) {
+        return res.status(429).json({
+            success: false,
+            message: 'Too many requests. Please try again later.'
+        });
+    }
+    next();
+}
+
 // Public route to get group name by code for invite links
-router.get('/code/:code', async (req, res) => {
+router.get('/code/:code', groupRateLimit, async (req, res) => {
     try {
         const GroupModel = require('../models/groupModel');
         const group = await GroupModel.getGroupByCode(req.params.code);
@@ -18,8 +46,8 @@ router.get('/code/:code', async (req, res) => {
 router.use(authMiddleware);
 
 router.get('/', groupController.getUserGroups);
-router.post('/create', groupController.createGroup);
-router.post('/join', groupController.joinGroup);
+router.post('/create', groupRateLimit, groupController.createGroup);
+router.post('/join', groupRateLimit, groupController.joinGroup);
 router.get('/members', groupController.getMembers);
 router.post('/members/add', groupController.addMemberDirectly);
 router.post('/members/remove', groupController.removeMember);

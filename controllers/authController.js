@@ -10,8 +10,8 @@ const authController = {
                 return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
             }
             
-            if (password.length < 6) {
-                return res.status(400).json({ success: false, message: 'WEAK_PASSWORD' });
+            if (password.length < 6 || password.length > 72) {
+                return res.status(400).json({ success: false, message: 'Password must be between 6 and 72 characters' });
             }
 
             const existingUser = await UserModel.findByEmail(email);

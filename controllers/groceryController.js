@@ -33,8 +33,11 @@ const groceryController = {
             if (!group_id || !item_name || !amount || !purchase_date) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
-            if (Number(amount) <= 0) {
-                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            if (item_name.length > 100) {
+                return res.status(400).json({ success: false, message: 'Item name is too long' });
+            }
+            if (isNaN(amount) || Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
             }
 
             const isMember = await GroupModel.isMember(group_id, userId);
@@ -59,7 +62,7 @@ const groceryController = {
                 await ActivityLogModel.create(
                     group_id,
                     userId,
-                    'GROCERY_LOGGED',
+                    'ADDED_GROCERY',
                     `${req.session.userName || 'Someone'} logged grocery "${item_name}" (₹ ${amount})`
                 );
             } catch (logErr) {
@@ -82,22 +85,26 @@ const groceryController = {
             const { item_name, quantity, amount } = req.body;
             const userId = req.session.userId;
 
+            if (item_name && item_name.length > 100) {
+                return res.status(400).json({ success: false, message: 'Item name is too long' });
+            }
             const grocery = await GroceryModel.getGroceryById(groceryId);
             if (!grocery) {
                 return res.status(404).json({ success: false, message: 'Grocery not found' });
             }
-            if (Number(amount) <= 0) {
-                return res.status(400).json({ success: false, message: 'Amount must be greater than zero' });
+            if (isNaN(amount) || Number(amount) <= 0) {
+                return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
             }
 
-            if (grocery.purchased_by !== userId) {
+            if (Number(grocery.purchased_by) !== Number(userId)) {
                 return res.status(403).json({ success: false, message: 'Only purchaser can edit' });
             }
 
-            // Check if same day
-            const today = new Date().toISOString().split('T')[0];
+            // Check if same day (using IST)
+            const ISTString = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+            const todayIST = new Date(ISTString).toLocaleDateString('en-CA');
             const purchaseDate = new Date(grocery.purchase_date).toISOString().split('T')[0];
-            if (today !== purchaseDate) {
+            if (todayIST !== purchaseDate) {
                 return res.status(403).json({ success: false, message: 'Cannot edit past records' });
             }
 
@@ -119,14 +126,15 @@ const groceryController = {
                 return res.status(404).json({ success: false, message: 'Grocery not found' });
             }
 
-            if (grocery.purchased_by !== userId) {
+            if (Number(grocery.purchased_by) !== Number(userId)) {
                 return res.status(403).json({ success: false, message: 'Only purchaser can delete' });
             }
 
-            // Check if same day
-            const today = new Date().toISOString().split('T')[0];
-            const purchaseDate = new Date(grocery.purchase_date).toISOString().split('T')[0];
-            if (today !== purchaseDate) {
+            // Check if same day (using IST)
+            const ISTString2 = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+            const todayIST2 = new Date(ISTString2).toLocaleDateString('en-CA');
+            const purchaseDate2 = new Date(grocery.purchase_date).toISOString().split('T')[0];
+            if (todayIST2 !== purchaseDate2) {
                 return res.status(403).json({ success: false, message: 'Cannot delete past records' });
             }
 
