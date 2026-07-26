@@ -119,10 +119,16 @@ const dashboardController = {
                 
                 let dayTotal = 0;
                 expenses.forEach(e => {
-                    if (e.expense_date && e.expense_date.startsWith(dateStr) && e.expense_type !== 'transfer') dayTotal += parseFloat(e.amount);
+                    if (e.expense_date && e.expense_type !== 'transfer') {
+                        const dStr = new Date(e.expense_date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                        if (dStr === dateStr) dayTotal += parseFloat(e.amount);
+                    }
                 });
                 groceries.forEach(g => {
-                    if (g.purchase_date && g.purchase_date.startsWith(dateStr)) dayTotal += parseFloat(g.amount);
+                    if (g.purchase_date) {
+                        const dStr = new Date(g.purchase_date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                        if (dStr === dateStr) dayTotal += parseFloat(g.amount);
+                    }
                 });
                 
                 trend.push({
