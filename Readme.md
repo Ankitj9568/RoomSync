@@ -2,7 +2,7 @@
 
 ![RoomSync Landing Page](docs/assets/landing-page.webp)
 
-**Live Demo:** [https://roomsync.up.railway.app/](https://roomsync.up.railway.app/)
+**Live Demo:** [https://roomsync-production-82ed.up.railway.app/](https://roomsync-production-82ed.up.railway.app/)
 
 > **A shared living management platform for roommates, hostel students, PG residents, and shared apartments.**
 
@@ -130,14 +130,3 @@ RoomSync exposes a RESTful API for managing all shared household activities.
 | Analytics | `/api/analytics` |
 
 ---
-
-## Developer
-
-**Ankit Kumar Jha** (B.Tech IT)
-- Core development, architecture, and UI/UX design.
-
----
-
-## License
-
-This project is open-source and available under the MIT License.
