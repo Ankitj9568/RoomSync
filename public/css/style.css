@@ -89,10 +89,11 @@ hr {
 .form-control::placeholder {
     color: var(--text-muted);
 }
-.form-control:disabled, .form-control[readonly] {
+.form-control:disabled, .form-control[readonly], .form-select:disabled {
     background-color: var(--bg-surface-secondary);
-    color: var(--text-primary);
+    color: var(--text-secondary);
     border-color: var(--border-color);
+    opacity: 0.8;
 }
 .form-label, .form-text {
     color: var(--text-secondary);
@@ -112,6 +113,8 @@ hr {
     --bs-table-color: var(--text-primary);
     --bs-table-striped-bg: var(--bg-surface-secondary);
     --bs-table-hover-bg: var(--bg-surface-secondary);
+    --bs-table-striped-color: var(--text-primary);
+    --bs-table-hover-color: var(--text-primary);
 }
 .table th, .table-light th {
     background-color: var(--bg-surface) !important;
