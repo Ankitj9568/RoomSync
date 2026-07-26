@@ -1,5 +1,9 @@
 # RoomSync
 
+![RoomSync Landing Page](docs/assets/landing-page.webp)
+
+**Live Demo:** [https://roomsync.up.railway.app/](https://roomsync.up.railway.app/)
+
 > **A shared living management platform for roommates, hostel students, PG residents, and shared apartments.**
 
 RoomSync is a lightweight web application that helps people living together manage everyday household activities such as grocery purchases, shopping responsibilities, meal attendance, shared expenses, payments, settlements, and spending analytics—all from a single platform.
@@ -21,6 +25,8 @@ RoomSync is a lightweight web application that helps people living together mana
   - Role-based permissions (Admin vs Member).
   - Invite links and scannable QR codes for easy onboarding.
   - Configurable joining workflows (Direct Join vs Admin Approval for pending requests).
+- **Modern & Responsive UI**: Sleek landing page with animated horizontal sliders, glassmorphism design, and a fully mobile-optimized interface.
+- **Robust Testing**: Comprehensive testing suite built with Jest & Supertest to ensure the integrity of expense logic and settlement algorithms.
 
 ---
 
@@ -124,3 +130,14 @@ RoomSync exposes a RESTful API for managing all shared household activities.
 | Analytics | `/api/analytics` |
 
 ---
+
+## Developer
+
+**Ankit Kumar Jha** (B.Tech IT)
+- Core development, architecture, and UI/UX design.
+
+---
+
+## License
+
+This project is open-source and available under the MIT License.
