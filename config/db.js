@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
+const { URL } = require('url');
 require('dotenv').config();
 
 let dbInstance = null;
@@ -132,9 +133,7 @@ async function getDB() {
     initializationPromise = (async () => {
         if (isMySQL) {
             console.log('Connecting to MySQL Database...');
-            // Passing the connection URL directly is supported by mysql2 and
-            // preserves query parameters supplied by managed MySQL providers.
-            dbInstance = mysql.createPool(process.env.DATABASE_URL);
+            dbInstance = createMySQLPool(process.env.DATABASE_URL);
             await initializeMySQL(dbInstance);
             console.log('MySQL connection successful.');
         } else {
@@ -159,6 +158,38 @@ async function getDB() {
     } finally {
         initializationPromise = null;
     }
+}
+
+function createMySQLPool(connectionUrl) {
+    // mysql2 does not translate Aiven's `ssl-mode=REQUIRED` URI parameter
+    // into its `ssl` option. Parse that provider URI explicitly so Vercel can
+    // connect over TLS using the copied Service URI.
+    let parsed;
+    try {
+        parsed = new URL(connectionUrl);
+    } catch {
+        return mysql.createPool(connectionUrl);
+    }
+
+    const sslMode = parsed.searchParams.get('ssl-mode');
+    if (!sslMode) return mysql.createPool(connectionUrl);
+
+    const options = {
+        host: decodeURIComponent(parsed.hostname),
+        port: Number(parsed.port) || 3306,
+        user: decodeURIComponent(parsed.username),
+        password: decodeURIComponent(parsed.password),
+        database: decodeURIComponent(parsed.pathname.replace(/^\//, '')),
+        waitForConnections: true,
+        connectionLimit: 5
+    };
+
+    if (sslMode.toUpperCase() !== 'DISABLED') {
+        options.ssl = process.env.MYSQL_CA_CERT
+            ? { ca: process.env.MYSQL_CA_CERT, rejectUnauthorized: true }
+            : { rejectUnauthorized: false };
+    }
+    return mysql.createPool(options);
 }
 
 function adapter(connection, mysqlConnection = isMySQL) {
