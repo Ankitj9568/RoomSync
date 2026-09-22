@@ -71,7 +71,7 @@ async function initializeMySQL(pool) {
     const oldColumns = ['user_id', 'meal_date', 'meal_type'];
     const matchingIndex = columns => indexes =>
         indexes.length === columns.length &&
-        indexes.every((index, position) => index.Non_unique === 0 && index.Column_name === columns[position]);
+        indexes.every((index, position) => Number(index.Non_unique) === 0 && index.Column_name === columns[position]);
     const hasScopedMealKey = [...indexesByName.values()].some(matchingIndex(scopedColumns));
     if (!hasScopedMealKey) {
         const oldKeys = [...indexesByName.entries()]
