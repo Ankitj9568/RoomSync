@@ -7,6 +7,7 @@ router.use(authMiddleware);
 
 router.get('/', expenseController.getExpenses);
 router.post('/', expenseController.addExpense);
+router.get('/:id', expenseController.getExpense);
 router.put('/:id', expenseController.updateExpense);
 router.delete('/:id', expenseController.deleteExpense);
 

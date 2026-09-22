@@ -7,6 +7,7 @@ router.use(authMiddleware);
 
 router.get('/', mealController.getMeals);
 router.post('/', mealController.toggleMeal);
+router.put('/:id', mealController.updateMeal);
 router.get('/menu', mealController.getMenu);
 router.post('/menu', mealController.saveMenu);
 

@@ -1,6 +1,7 @@
 const PaymentModel = require('../models/paymentModel');
 const GroupModel = require('../models/groupModel');
 const settlementCalculator = require('../utils/settlementCalculator');
+const { isValidDate, isFutureDate, toCents } = require('../utils/validation');
 
 const paymentController = {
     async getSettlements(req, res) {
@@ -40,6 +41,7 @@ const paymentController = {
                 success: true, 
                 data: {
                     debts: namedDebts,
+                    balances: settlementData.balances,
                     total_debt: settlementData.totalDebt,
                     total_settled: settlementData.totalSettled,
                     recent_payments: recentPayments.slice(0, 50) // Send up to 50 recent payments
@@ -75,19 +77,24 @@ const paymentController = {
 
     async addPayment(req, res) {
         try {
-            const { group_id, paid_to, amount, payment_mode, note, payment_date } = req.body;
+            const { group_id, amount, note, payment_date } = req.body;
+            const paidTo = req.body.paid_to || req.body.receiver_id;
             const paidBy = req.session.userId;
+            const paymentMode = String(req.body.payment_mode || '').trim().toLowerCase();
 
-            if (!group_id || !paid_to || !amount || !payment_mode || !payment_date) {
+            if (!group_id || !paidTo || amount === undefined || !paymentMode || !payment_date) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
             if (note && note.length > 500) {
                 return res.status(400).json({ success: false, message: 'Note is too long' });
             }
-            if (isNaN(amount) || Number(amount) <= 0) {
+            if (toCents(amount) <= 0 || !isValidDate(payment_date) || isFutureDate(payment_date)) {
                 return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
             }
-            if (Number(paidBy) === Number(paid_to)) {
+            if (!['cash', 'upi', 'combination'].includes(paymentMode)) {
+                return res.status(400).json({ success: false, message: 'INVALID_PAYMENT_MODE' });
+            }
+            if (Number(paidBy) === Number(paidTo)) {
                 return res.status(400).json({ success: false, message: 'Cannot pay yourself' });
             }
 
@@ -95,8 +102,11 @@ const paymentController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
+            if (!await GroupModel.isMember(group_id, paidTo)) {
+                return res.status(400).json({ success: false, message: 'MEMBER_NOT_FOUND' });
+            }
 
-            const paymentId = await PaymentModel.addPayment(group_id, paidBy, paid_to, amount, payment_mode, note, payment_date);
+            const paymentId = await PaymentModel.addPayment(group_id, paidBy, paidTo, amount, paymentMode, note, payment_date);
             res.status(201).json({ success: true, data: { payment_id: paymentId } });
         } catch (error) {
             console.error('Add payment error:', error);

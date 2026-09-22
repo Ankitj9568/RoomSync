@@ -2,6 +2,7 @@ const ExpenseModel = require('../models/expenseModel');
 const GroceryModel = require('../models/groceryModel');
 const PaymentModel = require('../models/paymentModel');
 const GroupModel = require('../models/groupModel');
+const AdjustmentModel = require('../models/adjustmentModel');
 
 const settlementCalculator = {
     async calculateBalances(groupId) {
@@ -9,6 +10,7 @@ const settlementCalculator = {
         const expenses = await ExpenseModel.getExpensesByGroup(groupId);
         const groceries = await GroceryModel.getGroceriesByGroup(groupId);
         const payments = await PaymentModel.getPaymentsByGroup(groupId);
+        const adjustments = await AdjustmentModel.getAdjustmentsByGroup(groupId);
         const members = await GroupModel.getGroupMembers(groupId);
 
         // Initialize balances for each user: user_id -> balance
@@ -23,7 +25,7 @@ const settlementCalculator = {
 
         // 1. Process Expenses
         expenses.forEach(exp => {
-            // Add what people paid
+            // Add what people paid.
             exp.payers.forEach(payer => {
                 const key = String(payer.user_id);
                 if (balances[key] !== undefined) {
@@ -59,14 +61,29 @@ const settlementCalculator = {
                 }
             }
 
-            // Subtract everyone's equal share (assuming groceries are shared equally among all members)
-            const splitAmount = totalAmount / members.length;
-            members.forEach(m => {
-                balances[String(m.user_id)] -= splitAmount;
-            });
+            // Subtract everyone's equal share (assuming groceries are shared equally among all members).
+            if (members.length > 0) {
+                const totalCents = Math.round(totalAmount * 100);
+                const baseCents = Math.floor(totalCents / members.length);
+                let remainder = totalCents - (baseCents * members.length);
+                members.forEach(member => {
+                    const cents = baseCents + (remainder-- > 0 ? 1 : 0);
+                    balances[String(member.user_id)] -= cents / 100;
+                });
+            }
         });
 
-        // 3. Process Payments (Settlements)
+        // 3. Manual balance adjustments. An adjustment means from_user owes
+        // to_user; it is not a real payment and therefore has no payment status.
+        adjustments.forEach(adjustment => {
+            const amount = parseFloat(adjustment.amount);
+            const fromKey = String(adjustment.from_user);
+            const toKey = String(adjustment.to_user);
+            if (balances[fromKey] !== undefined) balances[fromKey] -= amount;
+            if (balances[toKey] !== undefined) balances[toKey] += amount;
+        });
+
+        // 4. Process Payments (Settlements)
         // If A paid B 100
         // A's balance increases by 100 (they paid out, so they are owed 100 less)
         // B's balance decreases by 100 (they received 100, so they owe 100 more)

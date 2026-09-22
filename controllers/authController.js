@@ -1,13 +1,24 @@
 const bcrypt = require('bcryptjs');
 const UserModel = require('../models/userModel');
+const { normalizeEmail, isValidEmail } = require('../utils/validation');
 
 const authController = {
     async register(req, res) {
         try {
-            const { name, email, password } = req.body;
+            const name = String(req.body.name || '').trim();
+            const email = normalizeEmail(req.body.email);
+            const { password } = req.body;
             
             if (!name || !email || !password) {
                 return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+            }
+
+            if (name.length < 2 || name.length > 100) {
+                return res.status(400).json({ success: false, message: 'Name must be between 2 and 100 characters' });
+            }
+
+            if (!isValidEmail(email)) {
+                return res.status(400).json({ success: false, message: 'INVALID_EMAIL_FORMAT' });
             }
             
             if (password.length < 6 || password.length > 72) {
@@ -20,7 +31,15 @@ const authController = {
             }
 
             const password_hash = await bcrypt.hash(password, 10);
-            const userId = await UserModel.create({ name, email, password_hash });
+            let userId;
+            try {
+                userId = await UserModel.create({ name, email, password_hash });
+            } catch (error) {
+                if (String(error.code).includes('DUP')) {
+                    return res.status(409).json({ success: false, message: 'EMAIL_ALREADY_EXISTS' });
+                }
+                throw error;
+            }
 
             // Create session so user is logged in immediately
             req.session.userId = userId;
@@ -38,7 +57,8 @@ const authController = {
 
     async login(req, res) {
         try {
-            const { email, password } = req.body;
+            const email = normalizeEmail(req.body.email);
+            const { password } = req.body;
             
             if (!email || !password) {
                 return res.status(400).json({ success: false, message: 'Email and password are required' });
@@ -73,13 +93,8 @@ const authController = {
     },
 
     async logout(req, res) {
-        req.session.destroy(err => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Could not log out' });
-            }
-            res.clearCookie('connect.sid');
-            res.json({ success: true, message: 'Logged out successfully.' });
-        });
+        req.session = null;
+        res.json({ success: true, message: 'Logged out successfully.' });
     }
 };
 

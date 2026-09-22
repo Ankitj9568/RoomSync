@@ -29,13 +29,17 @@ const shoppingListController = {
             const { group_id, item_name, assigned_to } = req.body;
             const userId = req.session.userId;
 
-            if (!group_id || !item_name || String(item_name).trim() === '') {
+            if (!group_id || !item_name || String(item_name).trim() === '' || String(item_name).length > 100) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
 
             const isMember = await GroupModel.isMember(group_id, userId);
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+
+            if (assigned_to !== undefined && assigned_to !== null && assigned_to !== '' && !await GroupModel.isMember(group_id, assigned_to)) {
+                return res.status(400).json({ success: false, message: 'MEMBER_NOT_FOUND' });
             }
 
             const itemId = await ShoppingListModel.addItem(group_id, item_name, assigned_to);
@@ -75,6 +79,13 @@ const shoppingListController = {
             const finalName = item_name !== undefined ? item_name : item.item_name;
             const finalAssigned = assigned_to !== undefined ? assigned_to : item.assigned_to;
             const finalStatus = status !== undefined ? status : item.status;
+
+            if (String(finalName).trim() === '' || String(finalName).length > 100) {
+                return res.status(400).json({ success: false, message: 'Invalid item name' });
+            }
+            if (finalAssigned !== undefined && finalAssigned !== null && finalAssigned !== '' && !await GroupModel.isMember(item.group_id, finalAssigned)) {
+                return res.status(400).json({ success: false, message: 'MEMBER_NOT_FOUND' });
+            }
 
             await ShoppingListModel.updateItem(itemId, finalName, finalAssigned, finalStatus);
             res.json({ success: true, message: 'Item updated' });

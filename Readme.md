@@ -84,7 +84,7 @@ npm install
 
 ### 3. Run the Application Locally
 
-By default, RoomSync uses a local **SQLite** database for development. You do not need to configure any external database to run it locally. It will auto-migrate and seed `database/roomsync.db` on the first run.
+By default, RoomSync uses a local **SQLite** database for development. You do not need to configure any external database to run it locally. It will initialize and seed `database/roomsync.db` on the first run.
 
 ```bash
 npm start
@@ -96,13 +96,14 @@ Once the server starts, open `http://localhost:3000` in your browser.
 
 ## Production Deployment (Vercel + MySQL)
 
-For deploying to production environments, RoomSync supports automatically switching to MySQL if a `DATABASE_URL` is provided. The application includes a built-in auto-migration script that ensures your MySQL schema stays up to date with new features on startup.
+For deploying to production environments, RoomSync automatically switches to MySQL when `DATABASE_URL` is provided. The application initializes missing tables and applies safe compatibility migrations on startup.
 
-1. Set up a MySQL database (e.g., using Railway or PlanetScale).
-2. Set the following environment variables in your hosting provider:
+1. Import [Ankitj9568/RoomSync](https://github.com/Ankitj9568/RoomSync) into Vercel.
+2. Set up a MySQL database (for example, using Railway or PlanetScale).
+3. Set the following environment variables in Vercel:
    - `DATABASE_URL`: Your full MySQL connection string.
    - `SESSION_SECRET`: A secure random string for signing cookies.
-3. Deploy the application. RoomSync includes a `vercel.json` file ready for zero-config Vercel deployment, and works out-of-the-box on platforms like Railway.
+4. Deploy the application. RoomSync includes a `vercel.json` file ready for GitHub-based Vercel deployment.
 
 
 ---

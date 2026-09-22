@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const pwForm = document.getElementById('changePasswordForm');
     if (pwForm) pwForm.addEventListener('submit', handlePasswordChange);
+
+    const adjustmentForm = document.getElementById('adjustmentForm');
+    if (adjustmentForm) adjustmentForm.addEventListener('submit', saveAdjustment);
 });
 
 async function loadSettingsProfile() {
@@ -123,7 +126,7 @@ async function loadGroupSettings() {
                 
                 // Set toggle state
                 const toggle = document.getElementById('allowDirectJoinToggle');
-                toggle.checked = res.data.allow_direct_join === 1;
+                 toggle.checked = Boolean(res.data.allow_direct_join);
                 
                 // Immediate save
                 toggle.onchange = async function() {
@@ -141,12 +144,70 @@ async function loadGroupSettings() {
                 };
                 
                 loadJoinRequests(groupId);
+                renderAdjustmentMembers(res.data.members, currentUserId);
+                loadAdjustments(groupId);
             } else {
                 adminPanel.classList.add('d-none');
             }
         }
     } catch (error) {
         console.error("Failed to load group settings", error);
+    }
+}
+
+function renderAdjustmentMembers(members, currentUserId) {
+    const from = document.getElementById('adjustmentFromUser');
+    const to = document.getElementById('adjustmentToUser');
+    if (!from || !to) return;
+    const options = members.map(member => `<option value="${member.user_id}">${esc(member.name)}${Number(member.user_id) === Number(currentUserId) ? ' (You)' : ''}</option>`).join('');
+    from.innerHTML = options;
+    to.innerHTML = options;
+    if (members.length > 1) to.selectedIndex = 1;
+}
+
+async function loadAdjustments(groupId) {
+    const list = document.getElementById('adjustmentsList');
+    if (!list) return;
+    try {
+        const res = await apiFetch(`/api/adjustments?group_id=${groupId}`, {}, true);
+        list.innerHTML = res.data.length ? res.data.map(adjustment => `
+            <div class="d-flex justify-content-between border-bottom py-2">
+                <span>${esc(adjustment.from_user_name)} owes ${esc(adjustment.to_user_name)} ₹${Number(adjustment.amount).toFixed(2)}<br><span class="text-muted">${esc(adjustment.reason)}</span></span>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteAdjustment(${adjustment.adjustment_id})">&times;</button>
+            </div>`).join('') : '<div class="text-muted">No adjustments recorded.</div>';
+    } catch (error) {
+        console.error('Failed to load adjustments', error);
+    }
+}
+
+async function saveAdjustment(event) {
+    event.preventDefault();
+    const groupId = getActiveGroupId();
+    const fromUser = document.getElementById('adjustmentFromUser').value;
+    const toUser = document.getElementById('adjustmentToUser').value;
+    if (fromUser === toUser) return alert('Select two different members');
+    try {
+        await apiFetch('/api/adjustments', { method: 'POST', body: {
+            group_id: groupId,
+            from_user: fromUser,
+            to_user: toUser,
+            amount: Number(document.getElementById('adjustmentAmount').value),
+            reason: document.getElementById('adjustmentReason').value
+        } });
+        event.target.reset();
+        loadAdjustments(groupId);
+    } catch (error) {
+        alert(error.message || 'Could not add adjustment');
+    }
+}
+
+async function deleteAdjustment(id) {
+    if (!confirm('Delete this adjustment?')) return;
+    try {
+        await apiFetch(`/api/adjustments/${id}`, { method: 'DELETE' });
+        loadAdjustments(getActiveGroupId());
+    } catch (error) {
+        alert(error.message || 'Could not delete adjustment');
     }
 }
 
@@ -191,6 +252,24 @@ async function processJoinRequest(reqId, status) {
         loadGroupSettings(); // Reload members if approved
     } catch (e) {
         alert(e.message || 'Failed to process request');
+    }
+}
+
+async function leaveActiveGroup() {
+    const groupId = getActiveGroupId();
+    if (!groupId || !confirm('Leave this group?')) return;
+    try {
+        await apiFetch(`/api/groups/${groupId}/leave`, { method: 'POST' });
+        localStorage.removeItem('activeGroupId');
+        window.location.href = '/pages/groups.html';
+    } catch (error) {
+        if (error.message === 'CANNOT_LEAVE_LAST_MEMBER' && confirm('You are the last member. Delete this group instead?')) {
+            await apiFetch(`/api/groups/${groupId}`, { method: 'DELETE' });
+            localStorage.removeItem('activeGroupId');
+            window.location.href = '/pages/groups.html';
+        } else {
+            alert(error.message || 'Could not leave group');
+        }
     }
 }
 

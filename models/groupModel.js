@@ -2,27 +2,25 @@ const db = require('../config/db');
 
 const GroupModel = {
     async createGroup(groupName, groupCode, userId) {
-        try {
-            const groupResult = await db.run(
+        return db.transaction(async tx => {
+            const groupResult = await tx.run(
                 'INSERT INTO `groups` (group_name, group_code, created_by) VALUES (?, ?, ?)',
                 [groupName, groupCode, userId]
             );
             const groupId = groupResult.lastID;
 
-            await db.run(
+            await tx.run(
                 'INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)',
                 [groupId, userId, 'admin']
             );
 
-            await db.run(
+            await tx.run(
                 'INSERT INTO group_settings (group_id) VALUES (?)',
                 [groupId]
             );
 
             return groupId;
-        } catch (error) {
-            throw error;
-        }
+        });
     },
 
     async getUserGroups(userId) {
@@ -45,7 +43,7 @@ const GroupModel = {
     },
 
     async getGroupByCode(groupCode) {
-        const rows = await db.all('SELECT group_id, group_name FROM `groups` WHERE group_code = ?', [groupCode]);
+        const rows = await db.all('SELECT group_id, group_name, group_code FROM `groups` WHERE UPPER(group_code) = UPPER(?)', [groupCode]);
         return rows[0];
     },
 
@@ -72,6 +70,48 @@ const GroupModel = {
         await db.run('DELETE FROM group_members WHERE group_id = ? AND user_id = ?', [groupId, userId]);
     },
 
+    async leaveGroup(groupId, userId) {
+        return db.transaction(async tx => {
+            const members = await tx.all('SELECT user_id, role FROM group_members WHERE group_id = ? ORDER BY joined_at ASC, group_member_id ASC', [groupId]);
+            const member = members.find(item => Number(item.user_id) === Number(userId));
+            if (!member) {
+                const error = new Error('NOT_A_MEMBER');
+                error.code = 'NOT_A_MEMBER';
+                throw error;
+            }
+            if (members.length === 1) {
+                const error = new Error('CANNOT_LEAVE_LAST_MEMBER');
+                error.code = 'CANNOT_LEAVE_LAST_MEMBER';
+                throw error;
+            }
+
+            let transferredTo = null;
+            if (member.role === 'admin' && members.filter(item => item.role === 'admin').length === 1) {
+                const replacement = members.find(item => Number(item.user_id) !== Number(userId));
+                await tx.run('UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?', ['admin', groupId, replacement.user_id]);
+                transferredTo = replacement.user_id;
+            }
+            await tx.run('DELETE FROM group_members WHERE group_id = ? AND user_id = ?', [groupId, userId]);
+            return { transferredTo };
+        });
+    },
+
+    async updateMemberRole(groupId, userId, role) {
+        await db.run('UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?', [role, groupId, userId]);
+    },
+
+    async getOldestMember(groupId, excludeUserId = null) {
+        const params = [groupId];
+        let query = 'SELECT user_id FROM group_members WHERE group_id = ?';
+        if (excludeUserId !== null) {
+            query += ' AND user_id <> ?';
+            params.push(excludeUserId);
+        }
+        query += ' ORDER BY joined_at ASC, group_member_id ASC LIMIT 1';
+        const rows = await db.all(query, params);
+        return rows[0];
+    },
+
     async deleteGroup(groupId) {
         await db.run('DELETE FROM `groups` WHERE group_id = ?', [groupId]);
     },
@@ -82,8 +122,14 @@ const GroupModel = {
     },
 
     async updateSettings(groupId, mealCutoffTime, allowDirectJoin) {
-        await db.run('UPDATE group_settings SET meal_cutoff_time = ?, allow_direct_join = ? WHERE group_id = ?', 
-            [mealCutoffTime, allowDirectJoin, groupId]);
+        const existing = await db.get('SELECT group_id FROM group_settings WHERE group_id = ?', [groupId]);
+        if (existing) {
+            await db.run('UPDATE group_settings SET meal_cutoff_time = ?, allow_direct_join = ? WHERE group_id = ?',
+                [mealCutoffTime, allowDirectJoin, groupId]);
+        } else {
+            await db.run('INSERT INTO group_settings (group_id, meal_cutoff_time, allow_direct_join) VALUES (?, ?, ?)',
+                [groupId, mealCutoffTime, allowDirectJoin]);
+        }
     },
     
     async createJoinRequest(groupId, userId) {

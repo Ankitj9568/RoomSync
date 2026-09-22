@@ -3,11 +3,13 @@ const ExpenseModel = require('../../models/expenseModel');
 const GroceryModel = require('../../models/groceryModel');
 const PaymentModel = require('../../models/paymentModel');
 const GroupModel = require('../../models/groupModel');
+const AdjustmentModel = require('../../models/adjustmentModel');
 
 jest.mock('../../models/expenseModel');
 jest.mock('../../models/groceryModel');
 jest.mock('../../models/paymentModel');
 jest.mock('../../models/groupModel');
+jest.mock('../../models/adjustmentModel');
 
 describe('Settlement Calculator (White-box)', () => {
     beforeEach(() => {
@@ -35,6 +37,7 @@ describe('Settlement Calculator (White-box)', () => {
 
         GroceryModel.getGroceriesByGroup.mockResolvedValue([]);
         PaymentModel.getPaymentsByGroup.mockResolvedValue([]);
+        AdjustmentModel.getAdjustmentsByGroup.mockResolvedValue([]);
 
         const result = await settlementCalculator.calculateBalances(1);
         
@@ -77,6 +80,7 @@ describe('Settlement Calculator (White-box)', () => {
         PaymentModel.getPaymentsByGroup.mockResolvedValue([
             { paid_by: 2, paid_to: 1, amount: 20, status: 'approved' }
         ]);
+        AdjustmentModel.getAdjustmentsByGroup.mockResolvedValue([]);
 
         const result = await settlementCalculator.calculateBalances(1);
         
@@ -87,5 +91,27 @@ describe('Settlement Calculator (White-box)', () => {
         
         expect(result.debts.length).toBe(1);
         expect(result.debts[0]).toEqual({ from: 2, to: 1, amount: 30 });
+    });
+
+    it('should include manual adjustments and preserve grocery cents', async () => {
+        GroupModel.getGroupMembers.mockResolvedValue([
+            { user_id: 1, name: 'Alice' },
+            { user_id: 2, name: 'Bob' },
+            { user_id: 3, name: 'Charlie' }
+        ]);
+        ExpenseModel.getExpensesByGroup.mockResolvedValue([]);
+        GroceryModel.getGroceriesByGroup.mockResolvedValue([
+            { amount: 100, purchased_by: 1, contributors: [{ user_id: 1, amount_paid: 100 }] }
+        ]);
+        PaymentModel.getPaymentsByGroup.mockResolvedValue([]);
+        AdjustmentModel.getAdjustmentsByGroup.mockResolvedValue([
+            { from_user: 2, to_user: 1, amount: 10 }
+        ]);
+
+        const result = await settlementCalculator.calculateBalances(1);
+        expect(Object.values(result.balances).reduce((sum, balance) => sum + balance, 0)).toBe(0);
+        expect(result.balances['1']).toBeCloseTo(76.66, 2);
+        expect(result.balances['2']).toBeCloseTo(-43.33, 2);
+        expect(result.balances['3']).toBeCloseTo(-33.33, 2);
     });
 });

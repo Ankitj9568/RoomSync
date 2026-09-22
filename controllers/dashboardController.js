@@ -4,6 +4,7 @@ const GroupModel = require('../models/groupModel');
 const MealModel = require('../models/mealModel');
 const MenuModel = require('../models/menuModel');
 const settlementCalculator = require('../utils/settlementCalculator');
+const { todayInTimeZone } = require('../utils/validation');
 
 const dashboardController = {
     async getOverview(req, res) {
@@ -24,19 +25,16 @@ const dashboardController = {
             const expenses = await ExpenseModel.getExpensesByGroup(group_id);
             const groceries = await GroceryModel.getGroceriesByGroup(group_id);
             
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
+            const currentMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }).format(new Date());
             
             let totalSpend = 0;
             expenses.forEach(e => {
-                const d = new Date(e.expense_date);
-                if (d.getMonth() === currentMonth && d.getFullYear() === currentYear && e.expense_type !== 'transfer') {
+                if (String(e.expense_date).slice(0, 7) === currentMonth && e.expense_type !== 'transfer') {
                     totalSpend += parseFloat(e.amount);
                 }
             });
             groceries.forEach(g => {
-                const d = new Date(g.purchase_date);
-                if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+                if (String(g.purchase_date).slice(0, 7) === currentMonth) {
                     totalSpend += parseFloat(g.amount);
                 }
             });
@@ -46,7 +44,7 @@ const dashboardController = {
             const myBalance = settlementData.balances[String(userId)] || 0; // use String key to match calculator
 
             // 3. Next Meal
-            const today = new Date().toISOString().split('T')[0];
+            const today = todayInTimeZone('Asia/Kolkata');
             const menu = await MenuModel.getMenuByGroupAndDate(group_id, today);
             
             let nextMeal = null;
@@ -98,15 +96,23 @@ const dashboardController = {
             const expenses = await ExpenseModel.getExpensesByGroup(group_id);
             const groceries = await GroceryModel.getGroceriesByGroup(group_id);
 
-            // Category breakdown (All time or current month, let's do all time for simplicity)
+            const requestedMonth = req.query.month;
+            if (requestedMonth !== undefined && !/^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth)) {
+                return res.status(400).json({ success: false, message: 'INVALID_MONTH_FORMAT' });
+            }
+            const month = requestedMonth || new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }).format(new Date());
+
+            // Category breakdown for the selected month.
             const categoryTotals = {};
             expenses.forEach(e => {
-                if (e.expense_type !== 'transfer') {
+                if (e.expense_type !== 'transfer' && String(e.expense_date).slice(0, 7) === month) {
                     categoryTotals[e.category] = (categoryTotals[e.category] || 0) + parseFloat(e.amount);
                 }
             });
             groceries.forEach(g => {
-                categoryTotals['grocery'] = (categoryTotals['grocery'] || 0) + parseFloat(g.amount);
+                if (String(g.purchase_date).slice(0, 7) === month) {
+                    categoryTotals['grocery'] = (categoryTotals['grocery'] || 0) + parseFloat(g.amount);
+                }
             });
 
             // Trend over last 7 days (using IST dates to match stored data)

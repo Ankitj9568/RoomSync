@@ -59,7 +59,9 @@ async function apiFetch(endpoint, options = {}, silent = false) {
         }
 
         if (!response.ok) {
-            const errorMsg = data && data.error ? data.error : (data.message || 'Something went wrong');
+            const errorMsg = data && data.error
+                ? (typeof data.error === 'string' ? data.error : data.error.message)
+                : (data && data.message ? data.message : 'Something went wrong');
             
             // Redirect to login if unauthorized
             if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
@@ -68,7 +70,7 @@ async function apiFetch(endpoint, options = {}, silent = false) {
             }
 
             // Handle stale group IDs
-            if (errorMsg === 'NOT_A_MEMBER' || response.status === 403) {
+            if (errorMsg === 'NOT_A_MEMBER' || errorMsg === 'GROUP_NOT_FOUND') {
                 localStorage.removeItem('activeGroupId');
                 if (!window.location.pathname.includes('/pages/groups.html')) {
                     window.location.href = '/pages/groups.html';

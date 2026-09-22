@@ -1,10 +1,10 @@
 -- 1. Seed Users (password for all is 'password123' -> hashed)
 -- Hashed using bcryptjs (salt rounds = 10)
 INSERT INTO users (name, email, password_hash, upi_id, phone) VALUES 
-('Aditi', 'aditi@example.com', '$2a$10$7Z8b/0V6wN9/c1f5.J4o3.V1aC7jT6C8D/H8Q1R9r/l7xP4m1/3E6', 'aditi@upi', '9876543210'),
-('Rohan', 'rohan@example.com', '$2a$10$7Z8b/0V6wN9/c1f5.J4o3.V1aC7jT6C8D/H8Q1R9r/l7xP4m1/3E6', 'rohan@ybl', '9876543211'),
-('Meera', 'meera@example.com', '$2a$10$7Z8b/0V6wN9/c1f5.J4o3.V1aC7jT6C8D/H8Q1R9r/l7xP4m1/3E6', 'meera@okicici', '9876543212'),
-('Karan', 'karan@example.com', '$2a$10$7Z8b/0V6wN9/c1f5.J4o3.V1aC7jT6C8D/H8Q1R9r/l7xP4m1/3E6', 'karan@okhdfc', '9876543213');
+('Aditi', 'aditi@example.com', '$2b$10$7.iMNdEujzgrX047sOj/gO06HiOEq6Z/K7QaXkuacYtKh3aUnqIsG', 'aditi@upi', '9876543210'),
+('Rohan', 'rohan@example.com', '$2b$10$7.iMNdEujzgrX047sOj/gO06HiOEq6Z/K7QaXkuacYtKh3aUnqIsG', 'rohan@ybl', '9876543211'),
+('Meera', 'meera@example.com', '$2b$10$7.iMNdEujzgrX047sOj/gO06HiOEq6Z/K7QaXkuacYtKh3aUnqIsG', 'meera@okicici', '9876543212'),
+('Karan', 'karan@example.com', '$2b$10$7.iMNdEujzgrX047sOj/gO06HiOEq6Z/K7QaXkuacYtKh3aUnqIsG', 'karan@okhdfc', '9876543213');
 
 -- 2. Seed Group
 INSERT INTO groups (group_name, group_code, created_by) VALUES 

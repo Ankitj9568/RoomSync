@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS meals (
   is_attending INT NOT NULL DEFAULT 1,
   diet_preference VARCHAR(255) DEFAULT 'veg', -- veg, non-veg, egg
   guest_count INT DEFAULT 0,
-  UNIQUE (user_id, meal_date, meal_type),
+  UNIQUE (group_id, user_id, meal_date, meal_type),
   FOREIGN KEY (group_id) REFERENCES `groups`(group_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS adjustments (
   group_id INT NOT NULL,
   from_user INT NOT NULL,
   to_user INT NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
   reason TEXT NOT NULL,
   created_by INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

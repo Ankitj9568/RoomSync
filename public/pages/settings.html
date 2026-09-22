@@ -115,6 +115,16 @@
                             <div class="list-group mb-3" id="pendingRequestsList">
                                 <div class="list-group-item text-center text-muted small py-3">No pending requests</div>
                             </div>
+
+                            <h6 class="text-muted-custom mb-2">Balance Adjustment</h6>
+                            <form id="adjustmentForm" class="border rounded p-3 mb-3">
+                                <select class="form-select form-select-sm mb-2" id="adjustmentFromUser" required></select>
+                                <select class="form-select form-select-sm mb-2" id="adjustmentToUser" required></select>
+                                <input class="form-control form-control-sm mb-2" id="adjustmentAmount" type="number" min="0.01" step="0.01" placeholder="Amount" required>
+                                <input class="form-control form-control-sm mb-2" id="adjustmentReason" maxlength="255" placeholder="Reason" required>
+                                <button class="btn btn-sm btn-primary w-100" type="submit">Add Adjustment</button>
+                            </form>
+                            <div id="adjustmentsList" class="small"></div>
                         </div>
 
                         <div class="mb-4">
@@ -122,6 +132,12 @@
                             <ul class="list-group list-group-flush" id="groupMembersList">
                                 <li class="list-group-item text-center text-muted">Loading...</li>
                             </ul>
+                        </div>
+
+                        <div class="border-top pt-3">
+                            <button type="button" class="btn btn-outline-danger w-100" onclick="leaveActiveGroup()">
+                                <i class="bi bi-box-arrow-left me-1"></i> Leave Current Group
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,7 @@
 const AdjustmentModel = require('../models/adjustmentModel');
 const GroupModel = require('../models/groupModel');
+const ActivityLogModel = require('../models/activityLogModel');
+const { toCents } = require('../utils/validation');
 
 const adjustmentController = {
     async getAdjustments(req, res) {
@@ -15,6 +17,7 @@ const adjustmentController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
+            if (isMember.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
 
             const adjustments = await AdjustmentModel.getAdjustmentsByGroup(group_id);
             res.json({ success: true, data: adjustments });
@@ -29,13 +32,13 @@ const adjustmentController = {
             const { group_id, from_user, to_user, amount, reason } = req.body;
             const userId = req.session.userId;
 
-            if (!group_id || !from_user || !to_user || !amount || !reason) {
+            if (!group_id || !from_user || !to_user || amount === undefined || !String(reason || '').trim()) {
                 return res.status(400).json({ success: false, message: 'Missing required fields' });
             }
-            if (reason.length > 500) {
+            if (String(reason).length > 255) {
                 return res.status(400).json({ success: false, message: 'Reason is too long' });
             }
-            if (isNaN(amount) || Number(amount) <= 0) {
+            if (toCents(amount) <= 0) {
                 return res.status(400).json({ success: false, message: 'Valid amount greater than zero is required' });
             }
             if (Number(from_user) === Number(to_user)) {
@@ -50,8 +53,12 @@ const adjustmentController = {
             if (role.role !== 'admin') {
                 return res.status(403).json({ success: false, message: 'Only admins can create adjustments' });
             }
+            if (!await GroupModel.isMember(group_id, from_user) || !await GroupModel.isMember(group_id, to_user)) {
+                return res.status(400).json({ success: false, message: 'MEMBER_NOT_FOUND' });
+            }
 
-            const adjustmentId = await AdjustmentModel.addAdjustment(group_id, from_user, to_user, amount, reason, userId);
+            const adjustmentId = await AdjustmentModel.addAdjustment(group_id, from_user, to_user, amount, String(reason).trim(), userId);
+            await ActivityLogModel.create(group_id, userId, 'ADDED_ADJUSTMENT', `Added a balance adjustment of ₹ ${amount}`);
             res.status(201).json({ success: true, data: { adjustment_id: adjustmentId } });
         } catch (error) {
             console.error('Add adjustment error:', error);
@@ -69,10 +76,8 @@ const adjustmentController = {
                 return res.status(404).json({ success: false, message: 'Adjustment not found' });
             }
 
-            // Only the creator can delete it
-            if (Number(adjustment.created_by) !== Number(userId)) {
-                return res.status(403).json({ success: false, message: 'Only creator can delete' });
-            }
+            const role = await GroupModel.isMember(adjustment.group_id, userId);
+            if (!role || role.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
 
             await AdjustmentModel.deleteAdjustment(adjustmentId);
             res.json({ success: true, message: 'Adjustment deleted' });

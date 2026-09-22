@@ -1,8 +1,9 @@
 const db = require('../config/db');
+const { normalizeEmail } = require('../utils/validation');
 
 const UserModel = {
     async findByEmail(email) {
-        const rows = await db.all('SELECT * FROM users WHERE email = ?', [email]);
+        const rows = await db.all('SELECT * FROM users WHERE email = ?', [normalizeEmail(email)]);
         return rows[0];
     },
 

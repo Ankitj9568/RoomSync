@@ -23,15 +23,15 @@ const userController = {
             const userId = req.session.userId;
             const { name, phone, upi_id } = req.body;
             
-            if (!name) {
+            if (!name || String(name).trim().length < 2 || String(name).trim().length > 100) {
                 return res.status(400).json({ success: false, message: 'Name is required' });
             }
             
-            if (phone && String(phone).length !== 10) {
+            if (phone && !/^\d{10}$/.test(String(phone))) {
                 return res.status(400).json({ success: false, message: 'INVALID_PHONE_FORMAT' });
             }
             
-            if (upi_id && (!upi_id.includes('@') || upi_id.length < 5)) {
+            if (upi_id && !/^[^\s@]+@[^\s@]+$/.test(String(upi_id))) {
                 return res.status(400).json({ success: false, message: 'INVALID_UPI_FORMAT' });
             }
 

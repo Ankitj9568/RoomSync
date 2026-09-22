@@ -5,6 +5,7 @@ const MenuModel = {
         const rows = await db.all(`
             SELECT * FROM daily_menus 
             WHERE group_id = ? AND menu_date = ?
+            ORDER BY CASE WHEN meal_type = 'lunch' THEN 1 ELSE 2 END
         `, [groupId, date]);
         return rows;
     },
