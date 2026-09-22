@@ -62,11 +62,21 @@ async function initializeMySQL(pool) {
     // Older deployments used a group-less meal uniqueness key, which breaks
     // users who belong to more than one group. Replace it when necessary.
     const [mealIndexes] = await pool.query('SHOW INDEX FROM meals');
-    const hasScopedMealKey = mealIndexes.some(index => index.Key_name === 'unique_meal_entry' && index.Column_name === 'group_id');
+    const indexesByName = new Map();
+    for (const index of mealIndexes) {
+        if (!indexesByName.has(index.Key_name)) indexesByName.set(index.Key_name, []);
+        indexesByName.get(index.Key_name)[Number(index.Seq_in_index) - 1] = index;
+    }
+    const scopedColumns = ['group_id', 'user_id', 'meal_date', 'meal_type'];
+    const oldColumns = ['user_id', 'meal_date', 'meal_type'];
+    const matchingIndex = columns => indexes =>
+        indexes.length === columns.length &&
+        indexes.every((index, position) => index.Non_unique === 0 && index.Column_name === columns[position]);
+    const hasScopedMealKey = [...indexesByName.values()].some(matchingIndex(scopedColumns));
     if (!hasScopedMealKey) {
-        const oldKeys = [...new Set(mealIndexes
-            .filter(index => index.Non_unique === 0 && index.Key_name !== 'PRIMARY' && index.Column_name !== 'group_id')
-            .map(index => index.Key_name))];
+        const oldKeys = [...indexesByName.entries()]
+            .filter(([key, indexes]) => key !== 'PRIMARY' && matchingIndex(oldColumns)(indexes))
+            .map(([key]) => key);
         for (const key of oldKeys) {
             await pool.query(`ALTER TABLE meals DROP INDEX \`${key.replace(/`/g, '')}\``);
         }
