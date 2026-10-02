@@ -16,6 +16,9 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/favicon.ico', (req, res) => {
+    res.type('image/svg+xml').sendFile(path.join(__dirname, 'public', 'favicon.svg'));
+});
 
 // Trust reverse proxy (for Vercel) to allow secure cookies
 app.set('trust proxy', 1);

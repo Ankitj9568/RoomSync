@@ -30,6 +30,11 @@ The Vercel build only runs `prisma generate`. Run database migrations separately
 from a trusted environment before deploying; this prevents a temporary database
 network issue from blocking the application deployment.
 
+The Vercel function region is configured as `icn1` (Seoul), close to the
+Supabase `ap-northeast-2` project region. Keep `DATABASE_URL` on the pooled
+6543 endpoint with `pgbouncer=true&connection_limit=1` for serverless runtime
+connections; use `DIRECT_URL` on port 5432 only for Prisma migrations.
+
 **Note:** Do not execute the legacy `database/schema_mysql.sql` for the new deployment. Use the Prisma migration in `prisma/migrations/`.
 
 ## 3. Configure Vercel

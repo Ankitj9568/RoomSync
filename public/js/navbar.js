@@ -175,7 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Fetch User Data and Groups
     if (navPlaceholder && typeof apiFetch !== 'undefined') {
-        loadUserProfile();
+        // These requests are independent. Running them together avoids making
+        // every page wait for two sequential serverless/database round trips.
+        const userProfilePromise = loadUserProfile();
+        loadUserGroups(userProfilePromise);
         
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
@@ -216,15 +219,13 @@ async function loadUserProfile() {
             document.getElementById('navUserEmail').textContent = user.email;
             document.getElementById('navUserInitial').textContent = user.name.charAt(0).toUpperCase();
             
-            // Now load groups
-            loadUserGroups();
         }
     } catch (error) {
         console.error("Failed to load profile", error);
     }
 }
 
-async function loadUserGroups() {
+async function loadUserGroups(userProfilePromise = Promise.resolve()) {
     try {
         const res = await apiFetch('/api/groups', {}, true);
         const groupSelect = document.getElementById('navGroupSelect');
@@ -257,6 +258,9 @@ async function loadUserGroups() {
             }
             
             groupSelect.value = activeGroupId;
+            // Keep page modules from rendering before the profile has populated
+            // localStorage with the current user id.
+            await userProfilePromise;
             window.dispatchEvent(new Event('groupReady'));
         }
     } catch (error) {
