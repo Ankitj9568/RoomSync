@@ -73,11 +73,22 @@
             <a href="/api/auth/google" class="btn btn-outline-secondary w-100 mb-3">
                 <i class="bi bi-google me-2"></i> Continue with Google
             </a>
-            <div class="text-start small text-muted-custom mb-3">
-                <div class="fw-medium mb-1">Which one are you?</div>
-                <div><a href="register.html?as=roommate" class="text-primary-custom text-decoration-none">Roommate</a> — split costs with flatmates.</div>
-                <div><a href="register.html?as=owner" class="text-primary-custom text-decoration-none">PG / Flat Owner</a> — run rooms, staff, and billing (second-step login).</div>
-                <div><a href="register.html?as=staff" class="text-primary-custom text-decoration-none">Staff</a> — cook, maid, or watchman joining with an invite code.</div>
+            <div class="text-start mb-3">
+                <div class="fw-medium small text-muted-custom mb-2">Which one are you?</div>
+                <div class="d-grid gap-2">
+                    <a href="register.html?as=roommate" class="role-pick">
+                        <i class="bi bi-people fs-5"></i>
+                        <span><strong>Roommate</strong><small>Split costs with flatmates.</small></span>
+                    </a>
+                    <a href="register.html?as=owner" class="role-pick">
+                        <i class="bi bi-building fs-5"></i>
+                        <span><strong>PG / Flat Owner</strong><small>Rooms, staff, and billing (second-step login).</small></span>
+                    </a>
+                    <a href="register.html?as=staff" class="role-pick">
+                        <i class="bi bi-tools fs-5"></i>
+                        <span><strong>Staff</strong><small>Cook, maid, or watchman joining with an invite code.</small></span>
+                    </a>
+                </div>
             </div>
             <p class="text-muted-custom">Don't have an account? <a href="register.html" class="text-primary-custom text-decoration-none">Create Account</a></p>
         </div>

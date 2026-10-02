@@ -328,6 +328,40 @@ hr {
     background-color: var(--bg-surface);
 }
 
+/* Fixed-size auth card with internal scrolling (register page): same
+   footprint as sign-in, extra fields scroll inside the card. */
+.auth-card-scroll {
+    margin: 24px auto;
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+/* Role picker rows on the login page */
+.role-pick {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-start;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+.role-pick:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-soft);
+    color: var(--text-primary);
+}
+.role-pick i {
+    color: var(--color-primary);
+    line-height: 1.4;
+}
+.role-pick small {
+    display: block;
+    color: var(--text-secondary);
+}
+
 /* Navbar / Sidebar */
 .sidebar {
     background-color: var(--bg-surface);
