@@ -1,6 +1,6 @@
 const request = require('supertest');
 
-jest.mock('../../models/userModel', () => {
+jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
     let nextId = 1;
     return {
@@ -18,12 +18,12 @@ jest.mock('../../models/userModel', () => {
     };
 });
 
-jest.mock('../../models/groupModel', () => ({
+jest.mock('../../backend/models/groupModel', () => ({
     getUserGroups: async () => [],
     isMember: jest.fn(async () => null)
 }));
 
-jest.mock('../../models/taskModel', () => ({
+jest.mock('../../backend/models/taskModel', () => ({
     getTasksByGroup: jest.fn(async () => []),
     getTaskById: jest.fn(async () => null),
     getTaskCounts: jest.fn(async () => ({ pending: 0, done: 0 })),
@@ -33,13 +33,13 @@ jest.mock('../../models/taskModel', () => ({
     deleteTask: jest.fn(async () => {})
 }));
 
-jest.mock('../../models/activityLogModel', () => ({
+jest.mock('../../backend/models/activityLogModel', () => ({
     create: jest.fn(async () => 1)
 }));
 
-const app = require('../../server');
-const GroupModel = require('../../models/groupModel');
-const TaskModel = require('../../models/taskModel');
+const app = require('../../backend/server');
+const GroupModel = require('../../backend/models/groupModel');
+const TaskModel = require('../../backend/models/taskModel');
 
 describe('task board authorization', () => {
     let agent;

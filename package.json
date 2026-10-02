@@ -2,13 +2,16 @@
   "name": "roomsync",
   "version": "1.0.0",
   "description": "> **A shared living management platform for roommates, hostel students, PG residents, and shared apartments.**",
-  "main": "server.js",
+  "main": "backend/server.js",
   "directories": {
     "doc": "docs"
   },
+  "prisma": {
+    "schema": "database/prisma/schema.prisma"
+  },
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
     "test": "jest",
     "test:e2e": "playwright test",
     "postinstall": "prisma generate",

@@ -1,8 +1,8 @@
 # 📄 DATABASE.md — Database Design Document
 
 > **Current implementation:** PostgreSQL managed through Prisma. The canonical
-> schema is `prisma/schema.prisma`, and deployable migrations are under
-> `prisma/migrations/`. The SQL examples below are legacy MySQL reference
+> schema is `database/prisma/schema.prisma`, and deployable migrations are under
+> `database/prisma/migrations/`. The SQL examples below are legacy MySQL reference
 > material retained for migration compatibility; do not use them to initialize
 > new environments.
 >
@@ -10,7 +10,7 @@
 >
 > `group_members.role` is one of `admin`, `owner`, `member`, or `staff`
 > (enforced by a database `CHECK` constraint, see
-> `prisma/migrations/0002_membership_roles/`). Owners manage the group exactly
+> `database/prisma/migrations/0002_membership_roles/`). Owners manage the group exactly
 > like admins. Staff accounts (chef, maid, caretaker) can use meals, menus,
 > groceries, and the shopping list, but are excluded from expenses, payments,
 > settlements, adjustments, and spending analytics, and are never included in
@@ -18,7 +18,7 @@
 >
 > ### Household tasks
 >
-> The `tasks` table (`prisma/migrations/0003_tasks/`) backs the owner-assigned
+> The `tasks` table (`database/prisma/migrations/0003_tasks/`) backs the owner-assigned
 > chore board: `category` is one of cooking, cleaning, utensils, laundry,
 > grocery, maintenance, security, or other; `schedule` is once, daily, or
 > weekly; `status` is pending or done. Managers create, edit, and delete;
@@ -26,7 +26,7 @@
 >
 > ### Owner MFA
 >
-> `users.totp_secret` / `users.mfa_enabled` (`prisma/migrations/0004_user_mfa/`)
+> `users.totp_secret` / `users.mfa_enabled` (`database/prisma/migrations/0004_user_mfa/`)
 > back TOTP second-factor auth (`utils/totp.js`, RFC 6238, zero dependencies).
 > Any user who owns at least one group must enroll; password login issues a
 > restricted session until enrollment or challenge completes.

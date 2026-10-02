@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../../server');
+const app = require('../../backend/server');
 
 describe('security headers', () => {
     it('sets baseline headers on static pages', async () => {

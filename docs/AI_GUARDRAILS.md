@@ -20,15 +20,15 @@ These rules are **mandatory** and must never be violated when generating or modi
 Business logic should reside in dedicated service modules where complexity justifies separation.
 
 Models should contain database access only.
-10. Keep **all database queries inside the model/database layer** (`models/`) — use Prisma models and transactions; never write database access inside routes or controllers.
+10. Keep **all database queries inside the model/database layer** (`backend/models/`) — use Prisma models and transactions; never write database access inside routes or controllers.
 11. Keep routes thin — a route file should only map HTTP verbs/paths to controller functions, with no logic of its own.
 12. Use modular JavaScript on the frontend — one file per page/feature (`groceries.js`, `expenses.js`, etc.), each with clearly scoped functions. No giant single `app.js` file.
-13. Avoid duplicate code — extract shared logic (e.g., fetch wrapper, date formatting, currency formatting) into shared utility files (`public/js/api.js`, `utils/`).
+13. Avoid duplicate code — extract shared logic (e.g., fetch wrapper, date formatting, currency formatting) into shared utility files (`frontend/js/api.js`, `backend/utils/`).
 
 ## Database Rules
 14. Keep the Prisma schema normalized to at least 3NF, as defined in DATABASE.md. Do not add redundant columns that duplicate data already available via a foreign key relationship.
 15. Use Prisma's typed query API and `$transaction`; never build SQL with unsanitized input. Raw SQL is permitted only for reviewed migration operations.
-16. Any new Prisma model must have an explicit primary key, appropriate relations, and database constraints consistent with `prisma/schema.prisma` and its migrations.
+16. Any new Prisma model must have an explicit primary key, appropriate relations, and database constraints consistent with `database/prisma/schema.prisma` and its migrations.
 
 ## API Rules
 17. Follow RESTful conventions strictly:

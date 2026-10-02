@@ -7,7 +7,7 @@ const {
     canAccessFinancials,
     canAccessPeerFinancials,
     hasRemainingManager
-} = require('../../utils/roles');
+} = require('../../backend/utils/roles');
 
 describe('group roles', () => {
     test('accepts exactly the four documented roles', () => {

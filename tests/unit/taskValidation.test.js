@@ -1,4 +1,4 @@
-const { validateTaskInput, TASK_CATEGORIES, TASK_SCHEDULES } = require('../../controllers/taskController');
+const { validateTaskInput, TASK_CATEGORIES, TASK_SCHEDULES } = require('../../backend/controllers/taskController');
 
 describe('task validation', () => {
     test('accepts a complete valid task', () => {

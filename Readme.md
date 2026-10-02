@@ -53,20 +53,25 @@ RoomSync is a lightweight web application that helps people living together mana
 
 ```text
 roomsync/
-├── config/
-├── controllers/
-├── database/
-├── middleware/
-├── models/
-├── public/
+├── frontend/            # Static UI served by Express
 │   ├── css/
 │   ├── js/
-│   └── pages/
-├── routes/
-├── utils/
+│   ├── pages/
+│   └── index.html
+├── backend/             # Node.js + Express API
+│   ├── server.js        # Entry point (serves frontend/ + mounts /api/*)
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   └── utils/
+├── database/            # Prisma schema + migrations, legacy SQL reference
+│   └── prisma/
+├── tests/               # Jest unit/integration + Playwright e2e
+├── scripts/
 ├── docs/
 ├── package.json
-├── server.js
 ├── vercel.json
 └── README.md
 ```

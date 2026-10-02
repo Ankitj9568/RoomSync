@@ -61,18 +61,18 @@ The repository already contains `vercel.json`; it sends API and page requests to
   "regions": ["icn1"],
   "builds": [
     {
-      "src": "server.js",
+      "src": "backend/server.js",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/server.js"
+      "destination": "/backend/server.js"
     },
     {
       "source": "/(.*)",
-      "destination": "/server.js"
+      "destination": "/backend/server.js"
     }
   ]
 }

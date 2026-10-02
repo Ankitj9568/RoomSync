@@ -1,7 +1,7 @@
 const request = require('supertest');
-const { generateToken } = require('../../utils/totp');
+const { generateToken } = require('../../backend/utils/totp');
 
-jest.mock('../../models/userModel', () => {
+jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
     let nextId = 1;
     const byId = id => [...users.values()].find(user => user.user_id === Number(id));
@@ -42,14 +42,14 @@ jest.mock('../../models/userModel', () => {
     };
 });
 
-jest.mock('../../models/groupModel', () => ({
+jest.mock('../../backend/models/groupModel', () => ({
     getUserGroups: jest.fn(async () => []),
     isMember: jest.fn(async () => null)
 }));
 
-const app = require('../../server');
-const GroupModel = require('../../models/groupModel');
-const UserModel = require('../../models/userModel');
+const app = require('../../backend/server');
+const GroupModel = require('../../backend/models/groupModel');
+const UserModel = require('../../backend/models/userModel');
 
 describe('owner multi-factor authentication', () => {
     const email = `owner${Date.now()}@test.com`;
@@ -103,7 +103,7 @@ describe('owner multi-factor authentication', () => {
 
         // A correct TOTP code completes the login.
         const user = await UserModel.findByEmail(email);
-        const { __getUser } = jest.requireMock('../../models/userModel');
+        const { __getUser } = jest.requireMock('../../backend/models/userModel');
         const secret = __getUser(user.user_id).totpSecret;
         const right = await agent.post('/api/auth/mfa/challenge').send({ token: generateToken(secret) });
         expect(right.statusCode).toEqual(200);

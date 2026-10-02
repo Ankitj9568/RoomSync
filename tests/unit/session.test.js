@@ -1,4 +1,4 @@
-const { SESSION_MAX_AGE_MS } = require('../../config/session');
+const { SESSION_MAX_AGE_MS } = require('../../backend/config/session');
 
 describe('session lifetime', () => {
     test('sessions last 30 days', () => {

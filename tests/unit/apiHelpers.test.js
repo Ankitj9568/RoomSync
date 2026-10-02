@@ -1,4 +1,4 @@
-const { esc, apiFetch, cachedGet, invalidateReadCache, debounce, __readCache } = require('../../public/js/api');
+const { esc, apiFetch, cachedGet, invalidateReadCache, debounce, __readCache } = require('../../frontend/js/api');
 
 function jsonResponse(payload) {
     return {

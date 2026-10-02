@@ -2,8 +2,10 @@
 
 > **Current implementation note:** RoomSync now uses PostgreSQL through
 > Prisma and deploys on Vercel. Older MySQL/mysql2 references in this legacy
-> document describe the original design; see `prisma/schema.prisma` and
-> `docs/Deployment.md` for the current implementation.
+> document describe the original design; see `database/prisma/schema.prisma` and
+> `docs/Deployment.md` for the current implementation. The repository layout
+> has also been modularized since: `frontend/` (static UI), `backend/`
+> (Express API), `database/` (Prisma schema plus migrations and legacy SQL).
 
 ## 1. Overall Architecture
 

@@ -1,15 +1,15 @@
-const settlementCalculator = require('../../utils/settlementCalculator');
-const ExpenseModel = require('../../models/expenseModel');
-const GroceryModel = require('../../models/groceryModel');
-const PaymentModel = require('../../models/paymentModel');
-const GroupModel = require('../../models/groupModel');
-const AdjustmentModel = require('../../models/adjustmentModel');
+const settlementCalculator = require('../../backend/utils/settlementCalculator');
+const ExpenseModel = require('../../backend/models/expenseModel');
+const GroceryModel = require('../../backend/models/groceryModel');
+const PaymentModel = require('../../backend/models/paymentModel');
+const GroupModel = require('../../backend/models/groupModel');
+const AdjustmentModel = require('../../backend/models/adjustmentModel');
 
-jest.mock('../../models/expenseModel');
-jest.mock('../../models/groceryModel');
-jest.mock('../../models/paymentModel');
-jest.mock('../../models/groupModel');
-jest.mock('../../models/adjustmentModel');
+jest.mock('../../backend/models/expenseModel');
+jest.mock('../../backend/models/groceryModel');
+jest.mock('../../backend/models/paymentModel');
+jest.mock('../../backend/models/groupModel');
+jest.mock('../../backend/models/adjustmentModel');
 
 describe('Settlement Calculator (White-box)', () => {
     beforeEach(() => {

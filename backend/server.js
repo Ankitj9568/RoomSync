@@ -23,7 +23,7 @@ app.use('/api', (req, res, next) => {
     res.setHeader('Pragma', 'no-cache');
     next();
 });
-app.use(express.static(path.join(__dirname, 'public'), {
+app.use(express.static(path.join(__dirname, '..', 'frontend'), {
     setHeaders(res, filePath) {
         if (String(filePath).endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-store');
@@ -32,7 +32,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
 }));
 app.get('/favicon.ico', (req, res) => {
-    res.type('image/svg+xml').sendFile(path.join(__dirname, 'public', 'favicon.svg'));
+    res.type('image/svg+xml').sendFile(path.join(__dirname, '..', 'frontend', 'favicon.svg'));
 });
 
 // Trust reverse proxy (for Vercel) to allow secure cookies

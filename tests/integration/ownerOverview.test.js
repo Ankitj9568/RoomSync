@@ -1,6 +1,6 @@
 const request = require('supertest');
 
-jest.mock('../../models/userModel', () => {
+jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
     let nextId = 1;
     return {
@@ -18,29 +18,29 @@ jest.mock('../../models/userModel', () => {
     };
 });
 
-jest.mock('../../models/groupModel', () => ({
+jest.mock('../../backend/models/groupModel', () => ({
     getUserGroups: async () => [],
     isMember: jest.fn(async () => null),
     getGroupMembers: jest.fn(async () => [])
 }));
 
-jest.mock('../../utils/settlementCalculator', () => ({
+jest.mock('../../backend/utils/settlementCalculator', () => ({
     calculateBalances: jest.fn(async () => ({ debts: [], balances: {} }))
 }));
 
-jest.mock('../../models/paymentModel', () => ({
+jest.mock('../../backend/models/paymentModel', () => ({
     getPaymentsByGroup: jest.fn(async () => [])
 }));
 
-jest.mock('../../models/taskModel', () => ({
+jest.mock('../../backend/models/taskModel', () => ({
     getTaskCounts: jest.fn(async () => ({ pending: 0, done: 0 }))
 }));
 
-const app = require('../../server');
-const GroupModel = require('../../models/groupModel');
-const settlementCalculator = require('../../utils/settlementCalculator');
-const PaymentModel = require('../../models/paymentModel');
-const TaskModel = require('../../models/taskModel');
+const app = require('../../backend/server');
+const GroupModel = require('../../backend/models/groupModel');
+const settlementCalculator = require('../../backend/utils/settlementCalculator');
+const PaymentModel = require('../../backend/models/paymentModel');
+const TaskModel = require('../../backend/models/taskModel');
 
 describe('owner overview stays PG-scoped', () => {
     let agent;

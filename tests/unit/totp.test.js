@@ -1,4 +1,4 @@
-const { base32Encode, generateToken, verifyToken } = require('../../utils/totp');
+const { base32Encode, generateToken, verifyToken } = require('../../backend/utils/totp');
 
 describe('totp', () => {
     // RFC 6238 Appendix B vector: secret "12345678901234567890" (ASCII),
