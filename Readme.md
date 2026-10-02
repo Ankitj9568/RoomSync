@@ -1,7 +1,5 @@
 # RoomSync — Shared Living, Without the Awkward Money Talks
 
-![RoomSync Landing Page](docs/assets/landing-page.webp)
-
 ## 🚀 Try it now — no setup needed
 
 **Live App:** [https://room-sync-kappa.vercel.app/](https://room-sync-kappa.vercel.app/)
@@ -27,13 +25,6 @@ Just open the link, create an account as a **Roommate**, **PG Owner**, or **Staf
 - **A rented flat with a landlord** — *Flat* group: members run daily chores and pick their own help, while only the owner controls rent and billing. *Pro: responsibilities match real life instead of one-size-fits-all admin rights.*
 - **Joining in seconds** — Every group has a unique QR. Scan it from the inbuilt camera scanner (or upload a screenshot): open groups ask Join/Cancel, approval groups send a request to the admin. *Pro: onboarding that actually works for non-technical staff.*
 - **Cooks buying vegetables** — Staff log grocery purchases and get credited in settlements without ever being charged a share. *Pro: fair money math that respects real roles.*
-
-## Diagrams
-
-- [High-level architecture](docs/diagrams/roomsync-architecture.html) — Vercel, Express, Prisma, Supabase, auth, and money flow.
-- [Use-case journeys](docs/diagrams/roomsync-use-cases.html) — what roommates, owners, and staff actually do, end to end.
-- [Audit notes](docs/AUDIT.md) — what a full security/correctness audit found and fixed.
-- [Roadmap](docs/ROADMAP.md) — how this becomes a daily habit and a business.
 
 ---
 
@@ -99,7 +90,6 @@ roomsync/
 │   └── prisma/
 ├── tests/               # Jest unit/integration + Playwright e2e
 ├── scripts/
-├── docs/
 ├── package.json
 ├── vercel.json
 └── README.md
@@ -107,56 +97,20 @@ roomsync/
 
 ---
 
-## Installation & Setup (developers only — users just open the live link)
+## Installation & Setup
 
-### 1. Clone the Repository
+This is a personal deployment — just use the live link above. The environment
+configuration is managed privately and is not published in this repository.
 
 ```bash
 git clone https://github.com/Ankitj9568/RoomSync.git
 cd RoomSync
-```
-
-### 2. Install Dependencies
-
-```bash
 npm install
-```
-
-### 3. Run the Application Locally
-
-RoomSync uses **PostgreSQL through Prisma** in development and production. Create a Supabase project (or local PostgreSQL database), copy the template from [docs/Deployment.md](docs/Deployment.md) into a local `.env` file (never committed), then initialize the schema:
-
-```bash
-npx prisma migrate deploy
 npm start
 ```
 
-Once the server starts, open `http://localhost:3000` in your browser.
-
----
-
-## Production Deployment (Vercel + Supabase PostgreSQL)
-
-For production, RoomSync uses PostgreSQL through Prisma. Prisma migrations create the schema; the application does not mutate the database schema during requests.
-
-1. Import [Ankitj9568/RoomSync](https://github.com/Ankitj9568/RoomSync) into Vercel.
-2. Create a Supabase PostgreSQL project.
-3. Set the following environment variables in Vercel:
-   - `DATABASE_URL`: Supabase pooled PostgreSQL URL.
-   - `DIRECT_URL`: Supabase direct PostgreSQL URL for Prisma migrations.
-   - `SESSION_SECRET`: A secure random string for signing cookies.
-   - `NODE_ENV`: `production`.
-   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Google login.
-   - `GOOGLE_CALLBACK_URL`: `https://your-domain.vercel.app/api/auth/google/callback`.
-4. Run `npx prisma migrate deploy` once against the production database, then deploy the application.
-5. Deploy the application. RoomSync includes a `vercel.json` file ready for GitHub-based Vercel deployment.
-
-To migrate the existing MySQL data, set `MYSQL_DATABASE_URL` locally and run:
-
-```bash
-npm run db:migrate:mysql-to-postgres
-```
-
+(A local `.env` with private credentials is required to run it; see the
+repository owner.)
 
 ---
 
