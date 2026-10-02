@@ -14,7 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestDashboardData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        document.getElementById('groupNameHeader').textContent = 'Welcome to RoomSync';
+        for (const id of ['ownerHome', 'staffHome', 'memberHome', 'memberQuickLinks']) {
+            document.getElementById(id).classList.add('d-none');
+        }
+        document.getElementById('activityLogContainer').innerHTML = '';
+        renderNoGroup();
+        return;
+    }
+    clearNoGroup();
     if (dashboardLoading || (!force && dashboardLoadedGroup === String(groupId))) return;
     dashboardLoading = true;
     loadDashboardData(groupId).finally(() => {

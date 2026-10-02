@@ -11,7 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestSettlementsData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        renderNoGroup();
+        document.getElementById('debtsContainer').innerHTML = '';
+        return;
+    }
+    clearNoGroup();
     if (!force && settlementsLoadedFor === String(groupId)) return;
     settlementsLoadedFor = String(groupId);
     loadSettlements();

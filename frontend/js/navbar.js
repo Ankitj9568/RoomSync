@@ -245,9 +245,11 @@ async function loadUserGroups(userProfilePromise = Promise.resolve()) {
             
             if (groups.length === 0) {
                 groupSelect.innerHTML = '<option value="">No Groups Found</option>';
-                if (!window.location.pathname.includes('/pages/groups.html')) {
-                    window.location.href = '/pages/groups.html';
-                }
+                // No forced redirect: groupless users may still use Scan,
+                // Join, Settings, and every page renders an empty state with
+                // join/create actions instead of bouncing to Manage Groups.
+                await userProfilePromise;
+                window.dispatchEvent(new Event('groupReady'));
                 return;
             }
             

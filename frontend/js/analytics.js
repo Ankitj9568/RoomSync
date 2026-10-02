@@ -16,7 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestAnalyticsData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        renderNoGroup();
+        return;
+    }
+    clearNoGroup();
     if (analyticsLoading || (!force && analyticsLoadedGroup === String(groupId))) return;
     analyticsLoading = true;
     loadAnalyticsData(groupId).finally(() => {

@@ -239,7 +239,30 @@ function debounce(fn, waitMs = 250) {
     };
 }
 
+// Empty state for groupless users: points to group creation and the QR
+// scanner instead of leaving "Loading..." skeletons behind.
+function noGroupCard(title = 'No active group') {
+    return `<div class="card shadow-sm border-0 mb-4"><div class="card-body text-center py-5">
+        <div class="empty-state-icon"><i class="bi bi-people"></i></div>
+        <h5>${esc(title)}</h5>
+        <p class="text-muted-custom small">Create a group, join with an invite code, or scan a group QR.</p>
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <a href="/pages/groups.html" class="btn btn-primary">Create or Join a Group</a>
+            <a href="/pages/scan.html" class="btn btn-outline-secondary"><i class="bi bi-qr-code-scan me-1"></i>Scan to Join</a>
+        </div></div></div>`;
+}
+
+function renderNoGroup(slotId = 'noGroupSlot') {
+    const slot = typeof document !== 'undefined' ? document.getElementById(slotId) : null;
+    if (slot) slot.innerHTML = noGroupCard();
+}
+
+function clearNoGroup(slotId = 'noGroupSlot') {
+    const slot = typeof document !== 'undefined' ? document.getElementById(slotId) : null;
+    if (slot) slot.innerHTML = '';
+}
+
 // Exposed for Jest without affecting browser script usage.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { esc, apiFetch, cachedGet, invalidateReadCache, debounce, __readCache: readCache };
+    module.exports = { esc, apiFetch, cachedGet, invalidateReadCache, debounce, noGroupCard, renderNoGroup, clearNoGroup, __readCache: readCache };
 }

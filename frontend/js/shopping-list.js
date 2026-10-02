@@ -16,7 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestShoppingData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        renderNoGroup();
+        document.getElementById('shoppingListContainer').innerHTML = '';
+        return;
+    }
+    clearNoGroup();
     if (!force && shoppingLoadedFor === String(groupId)) return;
     shoppingLoadedFor = String(groupId);
     fetchGroupMembers().then(() => loadShoppingList());

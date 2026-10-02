@@ -42,7 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestMealsData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        renderNoGroup();
+        document.getElementById('lunchMenuItems').innerHTML = '<span class="text-muted small">Join a group to see the menu.</span>';
+        document.getElementById('dinnerMenuItems').innerHTML = '';
+        return;
+    }
+    clearNoGroup();
     if (mealsLoading || (!force && mealsLoadedGroup === String(groupId))) return;
     mealsLoading = true;
     loadMealsData(groupId).finally(() => {

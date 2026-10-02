@@ -17,7 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestTasksData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        renderNoGroup();
+        document.getElementById('tasksTableBody').innerHTML = '';
+        return;
+    }
+    clearNoGroup();
     if (!force && tasksLoadedFor === String(groupId)) return;
     tasksLoadedFor = String(groupId);
     loadTasksPage();

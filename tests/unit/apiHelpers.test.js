@@ -1,4 +1,4 @@
-const { esc, apiFetch, cachedGet, invalidateReadCache, debounce, __readCache } = require('../../frontend/js/api');
+const { esc, apiFetch, cachedGet, invalidateReadCache, debounce, noGroupCard, __readCache } = require('../../frontend/js/api');
 
 function jsonResponse(payload) {
     return {
@@ -51,6 +51,13 @@ describe('api helpers', () => {
         await apiFetch('/api/groups/create', { method: 'POST', body: { name: 'Flat' } }, true);
         expect(__readCache.size).toBe(0);
         expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    test('noGroupCard points to group creation and the scanner', () => {
+        const html = noGroupCard();
+        expect(html).toContain('/pages/groups.html');
+        expect(html).toContain('/pages/scan.html');
+        expect(html).toContain('No active group');
     });
 
     test('debounce collapses rapid calls into one', () => {

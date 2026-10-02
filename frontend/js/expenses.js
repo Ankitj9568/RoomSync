@@ -13,7 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestExpensesData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        renderNoGroup();
+        document.getElementById('expensesAccordionDaily').innerHTML = '';
+        return;
+    }
+    clearNoGroup();
     if (!force && expensesLoadedFor === String(groupId)) return;
     expensesLoadedFor = String(groupId);
     fetchGroupMembers().then(() => loadExpenses());

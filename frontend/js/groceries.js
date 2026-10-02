@@ -17,7 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function requestGroceriesData(force = false) {
     const groupId = getActiveGroupId();
-    if (!groupId) return;
+    if (!groupId) {
+        renderNoGroup();
+        document.getElementById('groceriesTableBody').innerHTML = '';
+        return;
+    }
+    clearNoGroup();
     if (!force && groceriesLoadedFor === String(groupId)) return;
     groceriesLoadedFor = String(groupId);
     loadGroceries();
