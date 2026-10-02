@@ -50,15 +50,15 @@ connections; use `DIRECT_URL` on port 5432 only for Prisma migrations.
      *   `GOOGLE_CLIENT_ID`: Google OAuth client ID.
      *   `GOOGLE_CLIENT_SECRET`: Google OAuth client secret.
      *   `GOOGLE_CALLBACK_URL`: `https://your-domain.vercel.app/api/auth/google/callback`.
-    *   `NODE_ENV`: `production`
 
 ## 4. `vercel.json` Configuration
 
-The repository already contains `vercel.json`; it sends API and page requests to the Express server, which serves both the static frontend and API.
+The repository already contains `vercel.json`; it sends API and page requests to the Express server, which serves both the static frontend and API. Functions run in `icn1` (Seoul), close to the Supabase `ap-northeast-2` region.
 
 ```json
 {
   "version": 2,
+  "regions": ["icn1"],
   "builds": [
     {
       "src": "server.js",
