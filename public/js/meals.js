@@ -1,11 +1,14 @@
 // meals.js - Meals Logic
 
+let mealsLoading = false;
+let mealsLoadedGroup = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    window.addEventListener('groupReady', loadMealsData);
-    window.addEventListener('groupChanged', loadMealsData);
+    window.addEventListener('groupReady', () => requestMealsData());
+    window.addEventListener('groupChanged', () => requestMealsData(true));
 
     if (getActiveGroupId()) {
-        loadMealsData();
+        requestMealsData();
     }
     
     // Wire up save menu form
@@ -37,19 +40,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-async function loadMealsData() {
+function requestMealsData(force = false) {
     const groupId = getActiveGroupId();
     if (!groupId) return;
+    if (mealsLoading || (!force && mealsLoadedGroup === String(groupId))) return;
+    mealsLoading = true;
+    loadMealsData(groupId).finally(() => {
+        mealsLoading = false;
+        mealsLoadedGroup = String(groupId);
+    });
+}
+
+async function loadMealsData(groupId) {
 
     try {
         const dateStr = new Date().toISOString().split('T')[0];
         
-        // 1. Fetch Today's Menu
-        const menuRes = await apiFetch(`/api/meals/menu?group_id=${groupId}&date=${dateStr}`);
+        // These endpoints are independent and can be fetched together.
+        const [menuRes, mealsRes] = await Promise.all([
+            apiFetch(`/api/meals/menu?group_id=${groupId}&date=${dateStr}`),
+            apiFetch(`/api/meals?group_id=${groupId}&date=${dateStr}`)
+        ]);
+
         renderMenu(menuRes.data);
 
-        // 2. Fetch Group Meals/Headcount for today
-        const mealsRes = await apiFetch(`/api/meals?group_id=${groupId}&date=${dateStr}`);
         renderHeadcount(mealsRes.data);
         
         // 3. Pre-fill user's own meal preferences in the form

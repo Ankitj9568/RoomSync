@@ -1,30 +1,45 @@
 // dashboard.js - Dashboard Logic
 
+let dashboardLoading = false;
+let dashboardLoadedGroup = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    window.addEventListener('groupReady', loadDashboardData);
-    window.addEventListener('groupChanged', loadDashboardData);
+    window.addEventListener('groupReady', () => requestDashboardData());
+    window.addEventListener('groupChanged', () => requestDashboardData(true));
 
     if (getActiveGroupId()) {
-        loadDashboardData();
+        requestDashboardData();
     }
 });
 
-async function loadDashboardData() {
+function requestDashboardData(force = false) {
     const groupId = getActiveGroupId();
     if (!groupId) return;
+    if (dashboardLoading || (!force && dashboardLoadedGroup === String(groupId))) return;
+    dashboardLoading = true;
+    loadDashboardData(groupId).finally(() => {
+        dashboardLoading = false;
+        dashboardLoadedGroup = String(groupId);
+    });
+}
+
+async function loadDashboardData(groupId) {
 
     try {
-        const groupRes = await apiFetch(`/api/groups/${groupId}`);
+        const [groupRes, dashRes, activityRes] = await Promise.all([
+            apiFetch(`/api/groups/${groupId}`),
+            apiFetch(`/api/dashboard?group_id=${groupId}`),
+            apiFetch(`/api/groups/${groupId}/activities`)
+        ]);
+
         if (groupRes.success && groupRes.data) {
             document.getElementById('groupNameHeader').textContent = groupRes.data.name + ' Dashboard';
         }
 
-        const dashRes = await apiFetch(`/api/dashboard?group_id=${groupId}`);
         if (dashRes.success && dashRes.data) {
             renderDashboardOverview(dashRes.data);
         }
 
-        const activityRes = await apiFetch(`/api/groups/${groupId}/activities`);
         if (activityRes.success && activityRes.data) {
             renderActivities(activityRes.data);
         }

@@ -1,7 +1,11 @@
 // api.js - Core API Utilities
 
-// Global Loading Spinner overlay
+// Global Loading Spinner overlay. Multiple page requests can run in parallel,
+// so keep the overlay visible until the last request finishes.
+let activeLoadingRequests = 0;
+
 function showLoader() {
+    activeLoadingRequests++;
     let loader = document.getElementById('global-loader');
     if (!loader) {
         loader = document.createElement('div');
@@ -18,6 +22,8 @@ function showLoader() {
 }
 
 function hideLoader() {
+    activeLoadingRequests = Math.max(0, activeLoadingRequests - 1);
+    if (activeLoadingRequests > 0) return;
     const loader = document.getElementById('global-loader');
     if (loader) {
         loader.style.display = 'none';

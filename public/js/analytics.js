@@ -2,19 +2,30 @@
 
 let catChartInstance = null;
 let trendChartInstance = null;
+let analyticsLoading = false;
+let analyticsLoadedGroup = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.addEventListener('groupReady', loadAnalyticsData);
-    window.addEventListener('groupChanged', loadAnalyticsData);
+    window.addEventListener('groupReady', () => requestAnalyticsData());
+    window.addEventListener('groupChanged', () => requestAnalyticsData(true));
 
     if (getActiveGroupId()) {
-        loadAnalyticsData();
+        requestAnalyticsData();
     }
 });
 
-async function loadAnalyticsData() {
+function requestAnalyticsData(force = false) {
     const groupId = getActiveGroupId();
     if (!groupId) return;
+    if (analyticsLoading || (!force && analyticsLoadedGroup === String(groupId))) return;
+    analyticsLoading = true;
+    loadAnalyticsData(groupId).finally(() => {
+        analyticsLoading = false;
+        analyticsLoadedGroup = String(groupId);
+    });
+}
+
+async function loadAnalyticsData(groupId) {
 
     try {
         const res = await apiFetch(`/api/dashboard/analytics?group_id=${groupId}`);
@@ -118,6 +129,5 @@ function renderCharts(data) {
 }
 
 window.addEventListener('themeChanged', () => {
-    loadAnalyticsData();
+    requestAnalyticsData(true);
 });
-
