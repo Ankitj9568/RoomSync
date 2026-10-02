@@ -62,7 +62,7 @@ async function loadGroupSettings() {
             const groupSelect = document.getElementById('groupSelect');
             groupSelect.innerHTML = `<option value="${res.data.group_id}">${res.data.name}</option>`;
             
-            const joinUrl = `${window.location.origin}/pages/join.html?code=${res.data.join_code}`;
+            const joinUrl = `${window.location.origin}/pages/join.html?code=${res.data.join_code}&src=roomsync`;
             document.getElementById('groupCode').value = joinUrl;
             
             // Generate QR Code

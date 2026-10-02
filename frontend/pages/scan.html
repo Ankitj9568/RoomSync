@@ -30,7 +30,8 @@
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body text-center">
                 <video id="scanVideo" class="w-100 rounded d-none" playsinline muted></video>
-                <div id="scanStatus" class="text-muted py-4">Starting camera...</div>
+                <div id="scanStatus" class="text-muted py-4">RoomSync needs camera access to scan a group QR code. Nothing is recorded.</div>
+                <button class="btn btn-primary mt-2" id="scanStartBtn" onclick="requestCameraAndScan()"><i class="bi bi-camera me-2"></i>Allow Camera &amp; Scan</button>
                 <button class="btn btn-outline-secondary mt-2 d-none" id="scanRetryBtn" onclick="startScanner()">Retry Camera</button>
             </div>
         </div>
