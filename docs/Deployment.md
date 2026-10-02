@@ -35,7 +35,7 @@ Supabase `ap-northeast-2` project region. Keep `DATABASE_URL` on the pooled
 6543 endpoint with `pgbouncer=true&connection_limit=1` for serverless runtime
 connections; use `DIRECT_URL` on port 5432 only for Prisma migrations.
 
-**Note:** Do not execute the legacy `database/schema_mysql.sql` for the new deployment. Use the Prisma migration in `prisma/migrations/`.
+**Note:** Do not execute the legacy `database/schema_mysql.sql` for the new deployment. Use the Prisma migration in `database/prisma/migrations/`.
 
 ## 3. Configure Vercel
 
@@ -50,6 +50,31 @@ connections; use `DIRECT_URL` on port 5432 only for Prisma migrations.
      *   `GOOGLE_CLIENT_ID`: Google OAuth client ID.
      *   `GOOGLE_CLIENT_SECRET`: Google OAuth client secret.
      *   `GOOGLE_CALLBACK_URL`: `https://your-domain.vercel.app/api/auth/google/callback`.
+
+## 3b. Local `.env` Template
+
+> Casual users need none of this — just open the deployed link. This template
+> is only for developers running or deploying their own instance. Copy it into
+> a local `.env` file (never committed) and fill in the values.
+
+```env
+PORT=3000
+# Supabase pooled URL for the application runtime.
+DATABASE_URL=postgresql://postgres:password@host:6543/postgres?pgbouncer=true&connection_limit=1
+# Supabase direct URL for Prisma migrations.
+DIRECT_URL=postgresql://postgres:password@host:5432/postgres
+SESSION_SECRET=replace_with_a_long_random_secret
+NODE_ENV=production
+# Set to true in staging to log every Prisma query (stdout / Vercel logs).
+# Leave unset in production.
+# PRISMA_LOG_QUERIES=true
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
+# Only needed while running the one-time data migration.
+# MYSQL_DATABASE_URL=mysql://user:password@old-host:3306/roomsync
+```
 
 ## 4. `vercel.json` Configuration
 

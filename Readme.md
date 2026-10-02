@@ -1,12 +1,39 @@
-# RoomSync
+# RoomSync — Shared Living, Without the Awkward Money Talks
 
 ![RoomSync Landing Page](docs/assets/landing-page.webp)
 
-**Live Demo:** [https://room-sync-kappa.vercel.app/](https://room-sync-kappa.vercel.app/)
+## 🚀 Try it now — no setup needed
 
-> **A shared living management platform for roommates, hostel students, PG residents, and shared apartments.**
+**Live App:** [https://room-sync-kappa.vercel.app/](https://room-sync-kappa.vercel.app/)
 
-RoomSync is a lightweight web application that helps people living together manage everyday household activities such as grocery purchases, shopping responsibilities, meal attendance, shared expenses, payments, settlements, and spending analytics—all from a single platform.
+Just open the link, create an account as a **Roommate**, **PG Owner**, or **Staff**, and you are in. Nothing to install, no configuration. (The setup docs below are only for developers running their own instance.)
+
+> RoomSync runs shared households end to end: PG owners allot rooms, assign cooks/maids/watchmen their daily tasks, and track monthly rent collection — while roommates split groceries and expenses, plan meals, and settle up with the fewest possible payments.
+
+---
+
+## Who is it for
+
+| | What they get |
+|---|---|
+| **Roommates & flatmates** | Split groceries, expenses, and loans; plan daily meals; settle debts with one UPI/cash log instead of mental math. |
+| **PG / flat owners** | Allot rooms, provision staff accounts, assign daily chores, set monthly rent and bill day, and watch dues and collection roll in — behind mandatory two-step login. |
+| **Staff (cook, maid, watchman)** | A dead-simple home: today's tasks, meal headcounts, one-tap "Done". No financial noise, no clutter. |
+
+## Use cases & why each wins
+
+- **A 10-friend flat splitting ₹10,000** — Create a *Friends* group, log everything once, and the settlement engine collapses dozens of IOUs into a handful of payments. *Pro: no spreadsheets, no forgotten debts, no fights.*
+- **Running a 30-bed PG** — Create a *PG* group (you become the owner), allot `Room 101`-style beds, provision the cook and cleaner with one-time passwords, assign daily cooking/cleaning rounds, set rent + bill day, and track who paid. *Pro: the whole PG operation — rooms, staff, tasks, money — in one place.*
+- **A rented flat with a landlord** — *Flat* group: members run daily chores and pick their own help, while only the owner controls rent and billing. *Pro: responsibilities match real life instead of one-size-fits-all admin rights.*
+- **Joining in seconds** — Every group has a unique QR. Scan it from the inbuilt camera scanner (or upload a screenshot): open groups ask Join/Cancel, approval groups send a request to the admin. *Pro: onboarding that actually works for non-technical staff.*
+- **Cooks buying vegetables** — Staff log grocery purchases and get credited in settlements without ever being charged a share. *Pro: fair money math that respects real roles.*
+
+## Diagrams
+
+- [High-level architecture](docs/diagrams/roomsync-architecture.html) — Vercel, Express, Prisma, Supabase, auth, and money flow.
+- [Use-case journeys](docs/diagrams/roomsync-use-cases.html) — what roommates, owners, and staff actually do, end to end.
+- [Audit notes](docs/AUDIT.md) — what a full security/correctness audit found and fixed.
+- [Roadmap](docs/ROADMAP.md) — how this becomes a daily habit and a business.
 
 ---
 
@@ -80,13 +107,13 @@ roomsync/
 
 ---
 
-## Installation & Setup
+## Installation & Setup (developers only — users just open the live link)
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/roomsync.git
-cd roomsync
+git clone https://github.com/Ankitj9568/RoomSync.git
+cd RoomSync
 ```
 
 ### 2. Install Dependencies
@@ -97,7 +124,7 @@ npm install
 
 ### 3. Run the Application Locally
 
-RoomSync uses **PostgreSQL through Prisma** in development and production. Create a Supabase project (or local PostgreSQL database), copy `DATABASE_URL` and `DIRECT_URL` into `.env`, then initialize the schema:
+RoomSync uses **PostgreSQL through Prisma** in development and production. Create a Supabase project (or local PostgreSQL database), copy the template from [docs/Deployment.md](docs/Deployment.md) into a local `.env` file (never committed), then initialize the schema:
 
 ```bash
 npx prisma migrate deploy
