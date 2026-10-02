@@ -52,12 +52,24 @@
                         <button class="btn btn-outline-secondary toggle-password" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
                     </div>
                 </div>
-                <div class="mb-4 text-start">
+                <div class="mb-3 text-start">
                     <label for="confirmPassword" class="form-label">Confirm Password</label>
                     <div class="input-group">
                         <input type="password" class="form-control" id="confirmPassword" required>
                         <button class="btn btn-outline-secondary toggle-password" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
                     </div>
+                </div>
+                <div class="mb-4 text-start">
+                    <label class="form-label">I am joining as</label>
+                    <div class="btn-group w-100" role="group" aria-label="Account type">
+                        <input type="radio" class="btn-check" name="accountType" id="accRoommate" value="roommate" checked>
+                        <label class="btn btn-outline-primary" for="accRoommate"><i class="bi bi-people me-1"></i>Roommate</label>
+                        <input type="radio" class="btn-check" name="accountType" id="accOwner" value="owner">
+                        <label class="btn btn-outline-primary" for="accOwner"><i class="bi bi-building me-1"></i>PG Owner</label>
+                        <input type="radio" class="btn-check" name="accountType" id="accStaff" value="staff">
+                        <label class="btn btn-outline-primary" for="accStaff"><i class="bi bi-tools me-1"></i>Staff</label>
+                    </div>
+                    <div class="form-text" id="accountTypeHint">Roommates split costs and run the home together.</div>
                 </div>
                  <button type="submit" class="btn btn-primary w-100 mb-3">Register</button>
             </form>

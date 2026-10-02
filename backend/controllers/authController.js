@@ -3,10 +3,19 @@ const { generateSecret, verifyToken, provisioningUri } = require('../utils/totp'
 const UserModel = require('../models/userModel');
 const GroupModel = require('../models/groupModel');
 const { normalizeEmail, isValidEmail } = require('../utils/validation');
+const { normalizeAccountType, isValidAccountType } = require('../utils/roles');
 
 async function isOwnerAnywhere(userId) {
     const groups = await GroupModel.getUserGroups(userId);
     return groups.some(group => group.role === 'owner');
+}
+
+// MFA is mandatory for PG/flat owners: by signup intent or by holding an
+// owner role in any group.
+async function mfaRequiredFor(user) {
+    if (!user) return false;
+    if (normalizeAccountType(user.account_type) === 'owner') return true;
+    return isOwnerAnywhere(user.user_id);
 }
 
 const authController = {
@@ -15,6 +24,10 @@ const authController = {
             const name = String(req.body.name || '').trim();
             const email = normalizeEmail(req.body.email);
             const { password } = req.body;
+            const accountType = normalizeAccountType(req.body.account_type || 'roommate');
+            if (!isValidAccountType(accountType)) {
+                return res.status(400).json({ success: false, message: 'Invalid account type' });
+            }
             
             if (!name || !email || !password) {
                 return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
@@ -40,7 +53,7 @@ const authController = {
             const password_hash = await bcrypt.hash(password, 10);
             let userId;
             try {
-                userId = await UserModel.create({ name, email, password_hash });
+                userId = await UserModel.create({ name, email, password_hash, account_type: accountType });
             } catch (error) {
                 if (String(error.code).includes('DUP')) {
                     return res.status(409).json({ success: false, message: 'EMAIL_ALREADY_EXISTS' });
@@ -48,13 +61,17 @@ const authController = {
                 throw error;
             }
 
-            // Create session so user is logged in immediately
+            // Create session so user is logged in immediately. Owners still
+            // pass MFA on their next login; route them to start onboarding.
             req.session.userId = userId;
             req.session.userName = name;
 
+            const onboarding = accountType === 'owner' ? '/pages/groups.html?type=pg'
+                : accountType === 'staff' ? '/pages/join.html'
+                : '/pages/dashboard.html';
             res.status(201).json({
                 success: true,
-                data: { user_id: userId, name, email }
+                data: { user_id: userId, name, email, account_type: accountType, onboarding }
             });
         } catch (error) {
             console.error('Register error:', error);
@@ -84,7 +101,7 @@ const authController = {
             // PG/flat owners must pass a second factor. They receive a
             // restricted session that can only complete MFA enrollment or a
             // challenge until the check passes.
-            if (await isOwnerAnywhere(user.user_id)) {
+            if (await mfaRequiredFor(user)) {
                 const mfa = await UserModel.getMfa(user.user_id);
                 req.session.userId = user.user_id;
                 req.session.userName = user.name;
@@ -120,30 +137,31 @@ const authController = {
         res.redirect('/pages/dashboard.html');
     },
 
-    // Whether the current user must use MFA (owner of at least one group)
-    // and whether it is already enabled.
+    // Whether the current user must use MFA (owner account, or owner of at
+    // least one group) and whether it is already enabled.
     async mfaStatus(req, res) {
         try {
-            const owner = await isOwnerAnywhere(req.session.userId);
+            const user = await UserModel.findById(req.session.userId);
+            const required = await mfaRequiredFor(user);
             const mfa = await UserModel.getMfa(req.session.userId);
-            res.json({ success: true, data: { required: owner, enabled: Boolean(mfa && mfa.mfaEnabled) } });
+            res.json({ success: true, data: { required, enabled: Boolean(mfa && mfa.mfaEnabled) } });
         } catch (error) {
             console.error('MFA status error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
     },
 
-    // Begin TOTP enrollment. Owners only; returns the secret and an
+    // Begin TOTP enrollment. PG/flat owners only; returns the secret and an
     // otpauth:// URL for QR provisioning in any authenticator app.
     async mfaSetup(req, res) {
         try {
-            if (!await isOwnerAnywhere(req.session.userId)) {
+            const user = await UserModel.findById(req.session.userId);
+            if (!await mfaRequiredFor(user)) {
                 return res.status(403).json({ success: false, message: 'MFA is required for PG/flat owners only' });
             }
             const mfa = await UserModel.getMfa(req.session.userId);
             const secret = (mfa && mfa.totpSecret) || generateSecret();
             await UserModel.setTotpSecret(req.session.userId, secret);
-            const user = await UserModel.findById(req.session.userId);
             const otpauthUrl = provisioningUri(user ? user.email : 'roomsync', 'RoomSync', secret);
             res.json({ success: true, data: { secret, otpauth_url: otpauthUrl } });
         } catch (error) {
@@ -191,7 +209,8 @@ const authController = {
         }
     },
 
-    // Owners cannot disable MFA while they still own a group.
+    // Owners cannot disable MFA while they still own a group or hold an
+    // owner account.
     async mfaDisable(req, res) {
         try {
             const { password } = req.body;
@@ -199,7 +218,7 @@ const authController = {
             if (!user || !user.password_hash || !password || !await bcrypt.compare(password, user.password_hash)) {
                 return res.status(401).json({ success: false, message: 'INVALID_CREDENTIALS' });
             }
-            if (await isOwnerAnywhere(req.session.userId)) {
+            if (await mfaRequiredFor(user)) {
                 return res.status(403).json({ success: false, message: 'Owners must keep MFA enabled' });
             }
             await UserModel.setMfaEnabled(req.session.userId, false);

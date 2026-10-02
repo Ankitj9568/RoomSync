@@ -10,10 +10,10 @@ jest.mock('../../backend/models/userModel', () => {
             const user = users.get(String(email).toLowerCase());
             return user ? { ...user, password_hash: user.password_hash } : undefined;
         },
-        create: async ({ name, email, password_hash }) => {
+        create: async ({ name, email, password_hash, account_type }) => {
             const user = {
                 user_id: nextId++, name, email, password_hash,
-                phone: null, upi_id: null, totpSecret: null, mfaEnabled: false
+                phone: null, upi_id: null, account_type: account_type || 'roommate', totpSecret: null, mfaEnabled: false
             };
             users.set(email.toLowerCase(), user);
             return user.user_id;
@@ -65,6 +65,15 @@ describe('owner multi-factor authentication', () => {
         expect(res.statusCode).toEqual(200);
         expect(res.body.mfaRequired).toBeFalsy();
         expect(res.body.mfaSetupRequired).toBeFalsy();
+    });
+
+    test('owner accounts need MFA even before owning a group', async () => {
+        GroupModel.getUserGroups.mockResolvedValue([]);
+        const ownerEmail = `acctowner${Date.now()}@test.com`;
+        await request(app).post('/api/auth/register').send({ name: 'Acct Owner', email: ownerEmail, password, account_type: 'owner' });
+        const res = await request(app).post('/api/auth/login').send({ email: ownerEmail, password });
+        expect(res.statusCode).toEqual(200);
+        expect(res.body.mfaSetupRequired).toBe(true);
     });
 
     test('owners must enroll before entering', async () => {

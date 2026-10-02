@@ -70,6 +70,9 @@ const navbarHTML = `
         <a class="nav-link" href="/pages/tasks.html"><i class="bi bi-list-task me-3"></i> Tasks</a>
       </li>
       <li class="nav-item">
+        <a class="nav-link" href="/pages/scan.html"><i class="bi bi-qr-code-scan me-3"></i> Scan to Join</a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link" data-financial-link href="/pages/expenses.html"><i class="bi bi-receipt me-3"></i> Expenses</a>
       </li>
       <li class="nav-item">

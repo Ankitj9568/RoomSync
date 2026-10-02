@@ -10,7 +10,8 @@ function publicUser(user) {
         phone: user.phone,
         upi_id: user.upiId,
         avatar_url: user.avatarUrl,
-        email_verified: user.emailVerified
+        email_verified: user.emailVerified,
+        account_type: user.accountType || 'roommate'
     };
 }
 
@@ -30,7 +31,8 @@ const UserModel = {
                 name: userData.name,
                 email: normalizeEmail(userData.email),
                 passwordHash: userData.password_hash || null,
-                emailVerified: Boolean(userData.email_verified)
+                emailVerified: Boolean(userData.email_verified),
+                accountType: userData.account_type || 'roommate'
             }
         });
         return user.userId;

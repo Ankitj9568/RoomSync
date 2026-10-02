@@ -21,15 +21,20 @@ async function loadTasksPage() {
     if (!groupId) return;
 
     try {
-        const [membersRes, tasksRes] = await Promise.all([
+        const [membersRes, tasksRes, detailsRes] = await Promise.all([
             apiFetch(`/api/groups/members?group_id=${groupId}`),
-            fetchTasks(groupId)
+            fetchTasks(groupId),
+            apiFetch(`/api/groups/${groupId}`)
         ]);
 
         taskMembersCache = membersRes.data || [];
         const me = taskMembersCache.find(m => String(m.user_id) === String(getUserId()));
         iAmTaskManager = me && ['admin', 'owner'].includes(me.role);
-        document.getElementById('assignTaskBtn').classList.toggle('d-none', !iAmTaskManager);
+        // In flats and friends groups every member may raise tasks; in a PG
+        // only managers assign. The backend enforces the same rule.
+        const groupType = detailsRes.success && detailsRes.data ? detailsRes.data.group_type : 'friends';
+        const canAssign = iAmTaskManager || (groupType !== 'pg' && !!me);
+        document.getElementById('assignTaskBtn').classList.toggle('d-none', !canAssign);
 
         renderTasks(tasksRes.data || []);
     } catch (error) {

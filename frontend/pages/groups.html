@@ -27,6 +27,16 @@
     <div class="page-container">
         <h2 class="text-primary-custom mb-4">Manage Groups</h2>
 
+        <!-- My Groups: WhatsApp-style list of every group I'm in -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h5 class="card-title text-primary-custom border-bottom pb-2 mb-3"><i class="bi bi-collection me-2"></i>My Groups</h5>
+                <div class="list-group list-group-flush" id="myGroupsList">
+                    <div class="list-group-item text-center text-muted">Loading groups...</div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <!-- Left Column: Create & Join Group -->
             <div class="col-md-5 mb-4">
@@ -39,6 +49,31 @@
                             <div class="mb-3">
                                 <label class="form-label">Group Name</label>
                                 <input type="text" class="form-control" id="newGroupName" placeholder="e.g. Apt 4B" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Group Type</label>
+                                <div class="btn-group w-100" role="group" aria-label="Group type">
+                                    <input type="radio" class="btn-check" name="groupType" id="gtFriends" value="friends" checked>
+                                    <label class="btn btn-outline-primary" for="gtFriends">Friends</label>
+                                    <input type="radio" class="btn-check" name="groupType" id="gtFlat" value="flat">
+                                    <label class="btn btn-outline-primary" for="gtFlat">Flat</label>
+                                    <input type="radio" class="btn-check" name="groupType" id="gtPg" value="pg">
+                                    <label class="btn btn-outline-primary" for="gtPg">PG</label>
+                                </div>
+                                <div class="form-text" id="groupTypeHint">Friends split everything equally. No owner, no billing.</div>
+                            </div>
+                            <div id="pgBillingFields" class="d-none">
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Monthly Rent (₹)</label>
+                                        <input type="number" class="form-control" id="newGroupRent" min="0" step="1" value="0">
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Bill Day</label>
+                                        <input type="number" class="form-control" id="newGroupBillingDay" min="1" max="28" value="1">
+                                    </div>
+                                </div>
+                                <div class="form-text mb-3">Set by the owner. Only the owner can change these later.</div>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Create Group</button>
                         </form>
@@ -79,6 +114,7 @@
                                     <tr>
                                         <th class="ps-4">Name</th>
                                         <th>Role</th>
+                                        <th>Room</th>
                                         <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>

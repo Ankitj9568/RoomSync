@@ -21,7 +21,8 @@ jest.mock('../../backend/models/userModel', () => {
 jest.mock('../../backend/models/groupModel', () => ({
     getUserGroups: async () => [],
     isMember: jest.fn(async () => null),
-    getGroupMembers: jest.fn(async () => [])
+    getGroupMembers: jest.fn(async () => []),
+    getSettings: jest.fn(async () => null)
 }));
 
 jest.mock('../../backend/utils/settlementCalculator', () => ({

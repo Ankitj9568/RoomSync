@@ -52,12 +52,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle Register Form
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
+        // Preselect account type from links like register.html?as=owner.
+        const asParam = new URLSearchParams(window.location.search).get('as');
+        const accountHints = {
+            roommate: 'Roommates split costs and run the home together.',
+            owner: 'Owners run a PG or flat: rooms, staff, tasks, and monthly billing. Owner logins need a second step.',
+            staff: 'Staff (cook, maid, watchman) get tasks from the owner. Ask your owner for the group invite code.'
+        };
+        const applyAccountHint = () => {
+            const selected = document.querySelector('input[name="accountType"]:checked');
+            const hint = document.getElementById('accountTypeHint');
+            if (selected && hint && accountHints[selected.value]) hint.textContent = accountHints[selected.value];
+        };
+        if (asParam && accountHints[asParam]) {
+            const radio = document.querySelector(`input[name="accountType"][value="${asParam}"]`);
+            if (radio) radio.checked = true;
+        }
+        document.querySelectorAll('input[name="accountType"]').forEach(radio => {
+            radio.addEventListener('change', applyAccountHint);
+        });
+        applyAccountHint();
+
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+            const accountType = (document.querySelector('input[name="accountType"]:checked') || {}).value || 'roommate';
 
             if (password !== confirmPassword) {
                 showError("Passwords do not match");
@@ -67,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await apiFetch('/api/auth/register', {
                     method: 'POST',
-                    body: { name, email, password }
+                    body: { name, email, password, account_type: accountType }
                 });
 
                 if (response.success) {
@@ -81,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (parsed.origin !== window.location.origin) returnTo = null;
                         } catch { returnTo = null; }
                     }
-                    window.location.href = returnTo || '/pages/dashboard.html';
+                    window.location.href = returnTo || response.data.onboarding || '/pages/dashboard.html';
                 }
             } catch (error) {
                 // Error shown by apiFetch

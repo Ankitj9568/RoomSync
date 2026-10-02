@@ -1,11 +1,17 @@
 const {
     GROUP_ROLES,
+    GROUP_TYPES,
+    ACCOUNT_TYPES,
     isValidRole,
+    isValidGroupType,
+    isValidAccountType,
     normalizeRole,
     canManage,
     isAdmin,
+    isOwner,
     canAccessFinancials,
     canAccessPeerFinancials,
+    canCreateTask,
     hasRemainingManager
 } = require('../../backend/utils/roles');
 
@@ -65,5 +71,32 @@ describe('group roles', () => {
         ];
         expect(hasRemainingManager(members, 2)).toBe(true);
         expect(hasRemainingManager(members, 1)).toBe(false);
+    });
+
+    test('group and account types validate', () => {
+        expect(GROUP_TYPES).toEqual(['pg', 'flat', 'friends']);
+        expect(ACCOUNT_TYPES).toEqual(['roommate', 'owner', 'staff']);
+        expect(isValidGroupType('pg')).toBe(true);
+        expect(isValidGroupType('villa')).toBe(false);
+        expect(isValidAccountType('staff')).toBe(true);
+        expect(isValidAccountType('guest')).toBe(false);
+        expect(isOwner('owner')).toBe(true);
+        expect(isOwner('admin')).toBe(false);
+    });
+
+    test('task creation follows the household', () => {
+        // Managers assign everywhere.
+        expect(canCreateTask('admin', 'pg')).toBe(true);
+        expect(canCreateTask('owner', 'flat')).toBe(true);
+        // Members raise tasks in flats and friends groups, never in a PG.
+        expect(canCreateTask('member', 'flat')).toBe(true);
+        expect(canCreateTask('member', 'friends')).toBe(true);
+        expect(canCreateTask('staff', 'flat')).toBe(true);
+        expect(canCreateTask('member', 'pg')).toBe(false);
+        expect(canCreateTask('staff', 'pg')).toBe(false);
+        // Watchman rounds are always owner-only.
+        expect(canCreateTask('admin', 'flat', 'security')).toBe(false);
+        expect(canCreateTask('owner', 'pg', 'security')).toBe(true);
+        expect(canCreateTask(null, 'flat')).toBe(false);
     });
 });

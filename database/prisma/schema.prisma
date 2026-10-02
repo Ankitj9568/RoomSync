@@ -17,6 +17,7 @@ model User {
   phone                 String?
   avatarUrl             String?              @map("avatar_url")
   emailVerified         Boolean              @default(false) @map("email_verified")
+  accountType           String               @default("roommate") @map("account_type")
   totpSecret            String?              @map("totp_secret")
   mfaEnabled            Boolean              @default(false) @map("mfa_enabled")
   createdAt             DateTime             @default(now()) @map("created_at")
@@ -46,6 +47,7 @@ model Group {
   groupId       Int            @id @default(autoincrement()) @map("group_id")
   groupName     String         @map("group_name")
   groupCode     String         @unique @map("group_code")
+  groupType     String         @default("friends") @map("group_type")
   createdById   Int            @map("created_by")
   createdAt     DateTime       @default(now()) @map("created_at")
   createdBy     User           @relation("GroupCreator", fields: [createdById], references: [userId], onDelete: Restrict)
@@ -70,6 +72,7 @@ model GroupMember {
   groupId       Int      @map("group_id")
   userId        Int      @map("user_id")
   role          String   @default("member")
+  roomLabel     String?  @map("room_label")
   monthlyBudget Decimal  @default(0) @map("monthly_budget") @db.Decimal(10, 2)
   joinedAt      DateTime @default(now()) @map("joined_at")
   group         Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
@@ -237,6 +240,8 @@ model GroupSettings {
   groupId         Int     @id @map("group_id")
   mealCutoffTime  String  @default("10:00:00") @map("meal_cutoff_time")
   allowDirectJoin Boolean @default(true) @map("allow_direct_join")
+  rentAmount      Decimal @default(0) @db.Decimal(10, 2) @map("rent_amount")
+  billingDay      Int     @default(1) @map("billing_day")
   group           Group   @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
 
   @@map("group_settings")

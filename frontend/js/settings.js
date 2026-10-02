@@ -131,6 +131,16 @@ async function loadGroupSettings() {
                 // Balance adjustments are roommate-shared money: only
                 // roommate-admins see this section, never PG owners.
                 document.getElementById('adjustmentSection').classList.toggle('d-none', !currentUserIsRoommateAdmin);
+
+                // PG/flat billing belongs to the owner alone.
+                const billingSection = document.getElementById('billingSection');
+                const isOwnerBilling = (res.data.group_type === 'pg' || res.data.group_type === 'flat')
+                    && res.data.members.some(m => m.user_id === currentUserId && m.role === 'owner');
+                billingSection.classList.toggle('d-none', !isOwnerBilling);
+                if (isOwnerBilling) {
+                    document.getElementById('billingRent').value = res.data.rent_amount || 0;
+                    document.getElementById('billingDay').value = res.data.billing_day || 1;
+                }
                 
                 // Set toggle state
                 const toggle = document.getElementById('allowDirectJoinToggle');
@@ -281,8 +291,24 @@ async function leaveActiveGroup() {
     }
 }
 
-function copyGroupCode() {
-    const code = document.getElementById('groupCode').value;
+async function saveBilling() {
+    const groupId = getActiveGroupId();
+    if (!groupId) return;
+    try {
+        await apiFetch(`/api/groups/${groupId}/settings`, {
+            method: 'PATCH',
+            body: {
+                rent_amount: Number(document.getElementById('billingRent').value || 0),
+                billing_day: Number(document.getElementById('billingDay').value || 1)
+            }
+        });
+        alert('Billing saved!');
+    } catch (error) {
+        alert(error.message || 'Failed to save billing');
+    }
+}
+
+function copyGroupCode() {    const code = document.getElementById('groupCode').value;
     navigator.clipboard.writeText(code).then(() => {
         alert('Join link copied to clipboard!');
     });

@@ -7,21 +7,32 @@ function groupRow(group) {
         group_id: group.groupId,
         group_name: group.groupName,
         group_code: group.groupCode,
+        group_type: group.groupType,
         created_by: group.createdById,
         created_at: timestamp(group.createdAt)
     };
 }
 
 const GroupModel = {
-    async createGroup(groupName, groupCode, userId) {
+    async createGroup(groupName, groupCode, userId, opts = {}) {
+        const groupType = opts.groupType || 'friends';
+        const creatorRole = opts.creatorRole || (groupType === 'pg' ? 'owner' : 'admin');
         return prisma.$transaction(async tx => {
             const group = await tx.group.create({
                 data: {
                     groupName,
                     groupCode,
+                    groupType,
                     createdById: Number(userId),
-                    members: { create: { userId: Number(userId), role: 'admin' } },
-                    settings: { create: {} }
+                    members: { create: { userId: Number(userId), role: creatorRole } },
+                    settings: {
+                        create: {
+                            mealCutoffTime: '10:00:00',
+                            allowDirectJoin: true,
+                            rentAmount: opts.rentAmount || 0,
+                            billingDay: opts.billingDay || 1
+                        }
+                    }
                 }
             });
             return group.groupId;
@@ -37,6 +48,7 @@ const GroupModel = {
             group_id: membership.group.groupId,
             group_name: membership.group.groupName,
             group_code: membership.group.groupCode,
+            group_type: membership.group.groupType,
             role: membership.role,
             member_count: membership.group._count.members
         }));
@@ -66,6 +78,7 @@ const GroupModel = {
             phone: member.user.phone,
             upi_id: member.user.upiId,
             role: member.role,
+            room_label: member.roomLabel || null,
             joined_at: timestamp(member.joinedAt)
         }));
     },
@@ -128,6 +141,13 @@ const GroupModel = {
         });
     },
 
+    async updateRoomLabel(groupId, userId, roomLabel) {
+        await prisma.groupMember.update({
+            where: { groupId_userId: { groupId: Number(groupId), userId: Number(userId) } },
+            data: { roomLabel: roomLabel || null }
+        });
+    },
+
     async getOldestMember(groupId, excludeUserId = null) {
         const member = await prisma.groupMember.findFirst({
             where: { groupId: Number(groupId), ...(excludeUserId === null ? {} : { userId: { not: Number(excludeUserId) } }) },
@@ -145,15 +165,22 @@ const GroupModel = {
         return settings && {
             group_id: settings.groupId,
             meal_cutoff_time: settings.mealCutoffTime,
-            allow_direct_join: settings.allowDirectJoin
+            allow_direct_join: settings.allowDirectJoin,
+            rent_amount: number(settings.rentAmount),
+            billing_day: settings.billingDay
         };
     },
 
-    async updateSettings(groupId, mealCutoffTime, allowDirectJoin) {
+    async updateSettings(groupId, fields) {
+        const data = {};
+        if (fields.mealCutoffTime !== undefined) data.mealCutoffTime = fields.mealCutoffTime;
+        if (fields.allowDirectJoin !== undefined) data.allowDirectJoin = Boolean(fields.allowDirectJoin);
+        if (fields.rentAmount !== undefined) data.rentAmount = fields.rentAmount;
+        if (fields.billingDay !== undefined) data.billingDay = fields.billingDay;
         await prisma.groupSettings.upsert({
             where: { groupId: Number(groupId) },
-            create: { groupId: Number(groupId), mealCutoffTime, allowDirectJoin: Boolean(allowDirectJoin) },
-            update: { mealCutoffTime, allowDirectJoin: Boolean(allowDirectJoin) }
+            create: { groupId: Number(groupId), mealCutoffTime: '10:00:00', allowDirectJoin: true, ...data },
+            update: data
         });
     },
 

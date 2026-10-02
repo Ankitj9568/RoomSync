@@ -9,6 +9,16 @@ const settlementCalculator = require('../utils/settlementCalculator');
 const { todayInTimeZone } = require('../utils/validation');
 const { canManage, canAccessPeerFinancials } = require('../utils/roles');
 
+function roomOccupancy(members) {
+    const rooms = {};
+    members.forEach(member => {
+        const label = member.room_label || 'Unallotted';
+        if (!rooms[label]) rooms[label] = [];
+        rooms[label].push(member.name);
+    });
+    return rooms;
+}
+
 const dashboardController = {
     async getOverview(req, res) {
         try {
@@ -185,11 +195,12 @@ const dashboardController = {
                 return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             }
 
-            const [members, settlementData, payments, taskCounts] = await Promise.all([
+            const [members, settlementData, payments, taskCounts, settings] = await Promise.all([
                 GroupModel.getGroupMembers(group_id),
                 settlementCalculator.calculateBalances(group_id),
                 PaymentModel.getPaymentsByGroup(group_id),
-                TaskModel.getTaskCounts(group_id)
+                TaskModel.getTaskCounts(group_id),
+                GroupModel.getSettings(group_id)
             ]);
 
             const byRole = {};
@@ -223,7 +234,12 @@ const dashboardController = {
                 success: true,
                 data: {
                     occupancy: { total: members.length, by_role: byRole },
-                    members: members.map(member => ({ user_id: member.user_id, name: member.name, role: member.role })),
+                    members: members.map(member => ({ user_id: member.user_id, name: member.name, role: member.role, room_label: member.room_label || null })),
+                    rooms: roomOccupancy(members),
+                    billing: {
+                        rent_amount: settings ? Number(settings.rent_amount) : 0,
+                        billing_day: settings ? Number(settings.billing_day) : 1
+                    },
                     dues_to_owner: duesToOwner,
                     total_dues_to_owner: duesToOwner.reduce((sum, debt) => sum + Number(debt.amount), 0),
                     rent_collected_month: rentCollected,

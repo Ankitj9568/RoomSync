@@ -144,6 +144,23 @@
                             </form>
                             <div id="adjustmentsList" class="small"></div>
                             </div>
+
+                            <!-- PG/flat billing: owner only -->
+                            <div class="border rounded p-3 mb-3 d-none" id="billingSection">
+                                <h6 class="text-muted-custom mb-2"><i class="bi bi-cash-stack me-1"></i>Monthly Billing (Owner)</h6>
+                                <div class="row">
+                                    <div class="col-6 mb-2">
+                                        <label class="form-label small">Rent per member (₹)</label>
+                                        <input type="number" class="form-control form-control-sm" id="billingRent" min="0" step="1">
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <label class="form-label small">Bill day of month</label>
+                                        <input type="number" class="form-control form-control-sm" id="billingDay" min="1" max="28">
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-primary w-100" type="button" onclick="saveBilling()">Save Billing</button>
+                                <div class="form-text">Only the owner can change these. Bills generate on this day each month.</div>
+                            </div>
                         </div>
 
                         <div class="mb-4">

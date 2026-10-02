@@ -2,7 +2,7 @@ const GroupModel = require('../models/groupModel');
 const UserModel = require('../models/userModel');
 const ActivityLogModel = require('../models/activityLogModel');
 const { isValidTime, normalizeEmail, isValidEmail } = require('../utils/validation');
-const { isValidRole, normalizeRole, canManage, hasRemainingManager } = require('../utils/roles');
+const { isValidRole, normalizeRole, canManage, isOwner, hasRemainingManager, normalizeGroupType, isValidGroupType } = require('../utils/roles');
 const crypto = require('crypto');
 
 function generateGroupCode() {
@@ -25,6 +25,7 @@ const groupController = {
                 name: group.group_name,
                 group_name: group.group_name,
                 group_code: group.group_code,
+                group_type: group.group_type,
                 member_count: group.member_count,
                 role: group.role
             })) });
@@ -51,12 +52,15 @@ const groupController = {
                 group_id: group.group_id,
                 name: group.group_name,
                 group_name: group.group_name,
+                group_type: group.group_type,
                 join_code: group.group_code,
                 group_code: group.group_code,
                 member_count: members.length,
                 members,
                 allow_direct_join: settings ? Number(settings.allow_direct_join) === 1 : true,
-                meal_cutoff_time: settings ? settings.meal_cutoff_time : '10:00:00'
+                meal_cutoff_time: settings ? settings.meal_cutoff_time : '10:00:00',
+                rent_amount: settings ? Number(settings.rent_amount) : 0,
+                billing_day: settings ? Number(settings.billing_day) : 1
             } });
         } catch (error) {
             console.error('Get group details error:', error);
@@ -71,12 +75,37 @@ const groupController = {
                 return res.status(400).json({ success: false, message: 'Group name must be between 2 and 100 characters' });
             }
 
+            const groupType = normalizeGroupType(req.body.group_type || req.body.type || 'friends');
+            if (!isValidGroupType(groupType)) {
+                return res.status(400).json({ success: false, message: 'Invalid group type' });
+            }
+
+            // PG/flat billing is set once at creation; only the owner amounts.
+            const rentAmount = req.body.rent_amount === undefined || req.body.rent_amount === null || req.body.rent_amount === ''
+                ? 0
+                : Number(req.body.rent_amount);
+            const billingDay = req.body.billing_day === undefined || req.body.billing_day === null || req.body.billing_day === ''
+                ? 1
+                : Number(req.body.billing_day);
+            if (!Number.isFinite(rentAmount) || rentAmount < 0 || rentAmount > 10000000) {
+                return res.status(400).json({ success: false, message: 'Invalid rent amount' });
+            }
+            if (!Number.isInteger(billingDay) || billingDay < 1 || billingDay > 28) {
+                return res.status(400).json({ success: false, message: 'Billing day must be between 1 and 28' });
+            }
+
+            // A PG is born with its owner in charge; flats and friends groups
+            // start with a roommate-admin (the owner joins and is promoted).
+            const creatorRole = groupType === 'pg' ? 'owner' : 'admin';
+
             let groupId;
             let code;
             for (let attempt = 0; attempt < 5; attempt++) {
                 code = generateGroupCode();
                 try {
-                    groupId = await GroupModel.createGroup(name, code, req.session.userId);
+                    groupId = await GroupModel.createGroup(name, code, req.session.userId, {
+                        groupType, creatorRole, rentAmount, billingDay
+                    });
                     break;
                 } catch (error) {
                     if (!String(error.code).includes('DUP')) throw error;
@@ -84,9 +113,9 @@ const groupController = {
             }
             if (!groupId) return res.status(500).json({ success: false, message: 'Could not generate a unique group code' });
 
-            await ActivityLogModel.create(groupId, req.session.userId, 'CREATE_GROUP', `Created group ${name}`);
+            await ActivityLogModel.create(groupId, req.session.userId, 'CREATE_GROUP', `Created ${groupType} group ${name}`);
             res.status(201).json({ success: true, data: {
-                group_id: groupId, group_code: code, group_name: name, name
+                group_id: groupId, group_code: code, group_name: name, name, group_type: groupType
             } });
         } catch (error) {
             console.error('Create group error:', error);
@@ -187,7 +216,8 @@ const groupController = {
             if (!membership) return res.status(404).json({ success: false, message: 'GROUP_NOT_FOUND' });
             if (!canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
 
-            const current = await GroupModel.getSettings(id) || { meal_cutoff_time: '10:00:00', allow_direct_join: 1 };
+            const group = await GroupModel.getGroupById(id);
+            const current = await GroupModel.getSettings(id) || { meal_cutoff_time: '10:00:00', allow_direct_join: 1, rent_amount: 0, billing_day: 1 };
             const cutoff = req.body.meal_cutoff_time === undefined
                 ? current.meal_cutoff_time
                 : String(req.body.meal_cutoff_time);
@@ -195,8 +225,39 @@ const groupController = {
             const allowDirectJoin = req.body.allow_direct_join === undefined
                 ? Number(current.allow_direct_join) === 1
                 : parseBoolean(req.body.allow_direct_join);
-            await GroupModel.updateSettings(id, cutoff.length === 5 ? `${cutoff}:00` : cutoff, allowDirectJoin ? 1 : 0);
-            res.json({ success: true, data: { meal_cutoff_time: cutoff, allow_direct_join: allowDirectJoin } });
+
+            // PG/flat billing (rent amount + bill-generation day) is the
+            // owner's call alone. Friends groups have no PG billing.
+            let rentAmount;
+            let billingDay;
+            const wantsBilling = req.body.rent_amount !== undefined || req.body.billing_day !== undefined;
+            if (wantsBilling) {
+                if (!group || group.group_type === 'friends') {
+                    return res.status(400).json({ success: false, message: 'Billing applies to PG and flat groups only' });
+                }
+                if (!isOwner(membership.role)) {
+                    return res.status(403).json({ success: false, message: 'Only the owner can change billing' });
+                }
+                rentAmount = req.body.rent_amount === undefined ? Number(current.rent_amount) : Number(req.body.rent_amount);
+                billingDay = req.body.billing_day === undefined ? Number(current.billing_day) : Number(req.body.billing_day);
+                if (!Number.isFinite(rentAmount) || rentAmount < 0 || rentAmount > 10000000) {
+                    return res.status(400).json({ success: false, message: 'Invalid rent amount' });
+                }
+                if (!Number.isInteger(billingDay) || billingDay < 1 || billingDay > 28) {
+                    return res.status(400).json({ success: false, message: 'Billing day must be between 1 and 28' });
+                }
+            }
+
+            await GroupModel.updateSettings(id, {
+                mealCutoffTime: cutoff.length === 5 ? `${cutoff}:00` : cutoff,
+                allowDirectJoin,
+                ...(rentAmount !== undefined ? { rentAmount, billingDay } : {})
+            });
+            res.json({ success: true, data: {
+                meal_cutoff_time: cutoff,
+                allow_direct_join: allowDirectJoin,
+                ...(rentAmount !== undefined ? { rent_amount: rentAmount, billing_day: billingDay } : {})
+            } });
         } catch (error) {
             console.error('Update settings error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
@@ -298,17 +359,27 @@ const groupController = {
             const targetUserId = req.params.userId;
             const membership = await GroupModel.isMember(groupId, req.session.userId);
             if (!membership || !canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
-            const role = normalizeRole(req.body.role);
-            if (!isValidRole(role)) return res.status(400).json({ success: false, message: 'INVALID_ROLE' });
             const target = await GroupModel.isMember(groupId, targetUserId);
             if (!target) return res.status(404).json({ success: false, message: 'MEMBER_NOT_FOUND' });
-            if (canManage(target.role) && !canManage(role)) {
-                const members = await GroupModel.getGroupMembers(groupId);
-                if (!hasRemainingManager(members, targetUserId)) return res.status(409).json({ success: false, message: 'Cannot demote the only manager' });
+
+            // Role changes and PG room allotment ("Room 101") share this
+            // manager-only endpoint; either field may be sent alone.
+            if (req.body.role !== undefined) {
+                const role = normalizeRole(req.body.role);
+                if (!isValidRole(role)) return res.status(400).json({ success: false, message: 'INVALID_ROLE' });
+                if (canManage(target.role) && !canManage(role)) {
+                    const members = await GroupModel.getGroupMembers(groupId);
+                    if (!hasRemainingManager(members, targetUserId)) return res.status(409).json({ success: false, message: 'Cannot demote the only manager' });
+                }
+                await GroupModel.updateMemberRole(groupId, targetUserId, role);
+                await ActivityLogModel.create(groupId, req.session.userId, 'UPDATE_MEMBER_ROLE', `Changed a member role to ${role}`);
             }
-            await GroupModel.updateMemberRole(groupId, targetUserId, role);
-            await ActivityLogModel.create(groupId, req.session.userId, 'UPDATE_MEMBER_ROLE', `Changed a member role to ${role}`);
-            res.json({ success: true, message: 'Member role updated' });
+            if (req.body.room_label !== undefined) {
+                const roomLabel = String(req.body.room_label || '').trim().slice(0, 50);
+                await GroupModel.updateRoomLabel(groupId, targetUserId, roomLabel);
+                await ActivityLogModel.create(groupId, req.session.userId, 'UPDATE_ROOM', roomLabel ? `Allotted ${roomLabel}` : 'Cleared room allotment');
+            }
+            res.json({ success: true, message: 'Member updated' });
         } catch (error) {
             console.error('Update member role error:', error);
             res.status(500).json({ success: false, message: 'Server error' });

@@ -48,6 +48,11 @@ function isAdmin(role) {
     return normalizeRole(role) === 'admin';
 }
 
+// True only for PG/flat owners.
+function isOwner(role) {
+    return normalizeRole(role) === 'owner';
+}
+
 // False for staff. Used to keep household workers out of financial endpoints.
 function canAccessFinancials(role) {
     return FINANCIAL_ROLES.includes(normalizeRole(role));
@@ -56,6 +61,42 @@ function canAccessFinancials(role) {
 // False for staff AND owners. Roommate-shared money stays between roommates.
 function canAccessPeerFinancials(role) {
     return PEER_FINANCIAL_ROLES.includes(normalizeRole(role));
+}
+
+// Group types: pg (owner-run paying guest), flat (rented flat with an owner
+// but self-managed members), friends (equal roommate sharing, no owner).
+const GROUP_TYPES = ['pg', 'flat', 'friends'];
+
+// Signup intent, stored per account: roommate, owner (PG/flat owner), or
+// staff (cook, maid, watchman). Drives onboarding and the MFA requirement.
+const ACCOUNT_TYPES = ['roommate', 'owner', 'staff'];
+
+function normalizeGroupType(type) {
+    return String(type || '').trim().toLowerCase();
+}
+
+function isValidGroupType(type) {
+    return GROUP_TYPES.includes(normalizeGroupType(type));
+}
+
+function normalizeAccountType(type) {
+    return String(type || '').trim().toLowerCase();
+}
+
+function isValidAccountType(type) {
+    return ACCOUNT_TYPES.includes(normalizeAccountType(type));
+}
+
+// Who may create/assign household tasks. Managers always can. In flats and
+// friends groups every member (including staff grocery requests) can raise
+// tasks; in a PG only the managers assign — everyone else just does the work.
+// Security-category tasks (watchman rounds) are always owner-only, because
+// the watchman answers to the owner in every setup.
+function canCreateTask(role, groupType, category = 'other') {
+    if (String(category).toLowerCase() === 'security') return isOwner(role);
+    if (canManage(role)) return true;
+    if (!role) return false;
+    return normalizeGroupType(groupType) !== 'pg';
 }
 
 // True when at least one manager remains, used before demotions and removals.
@@ -67,14 +108,22 @@ function hasRemainingManager(members, excludeUserId = null) {
 
 module.exports = {
     GROUP_ROLES,
+    GROUP_TYPES,
+    ACCOUNT_TYPES,
     MANAGER_ROLES,
     FINANCIAL_ROLES,
     PEER_FINANCIAL_ROLES,
     normalizeRole,
+    normalizeGroupType,
+    normalizeAccountType,
     isValidRole,
+    isValidGroupType,
+    isValidAccountType,
     canManage,
     isAdmin,
+    isOwner,
     canAccessFinancials,
     canAccessPeerFinancials,
+    canCreateTask,
     hasRemainingManager
 };

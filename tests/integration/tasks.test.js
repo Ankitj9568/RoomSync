@@ -20,6 +20,7 @@ jest.mock('../../backend/models/userModel', () => {
 
 jest.mock('../../backend/models/groupModel', () => ({
     getUserGroups: async () => [],
+    getGroupById: jest.fn(async () => ({ group_id: 1, group_type: 'friends' })),
     isMember: jest.fn(async () => null)
 }));
 
@@ -63,10 +64,34 @@ describe('task board authorization', () => {
         expect(TaskModel.createTask).toHaveBeenCalled();
     });
 
-    test('members cannot assign tasks', async () => {
+    test('members cannot assign tasks in a PG', async () => {
         GroupModel.isMember.mockResolvedValue({ role: 'member' });
+        GroupModel.getGroupById.mockResolvedValue({ group_id: 1, group_type: 'pg' });
         const res = await agent.post('/api/tasks').send({ group_id: 1, title: 'Cook dinner' });
         expect(res.statusCode).toEqual(403);
+        GroupModel.getGroupById.mockResolvedValue({ group_id: 1, group_type: 'friends' });
+    });
+
+    test('members can raise tasks in flat and friends groups, never in a PG', async () => {
+        GroupModel.isMember.mockResolvedValue({ role: 'member' });
+        GroupModel.getGroupById.mockResolvedValue({ group_id: 1, group_type: 'flat' });
+        const flat = await agent.post('/api/tasks').send({ group_id: 1, title: 'Buy rice', category: 'grocery' });
+        expect(flat.statusCode).toEqual(201);
+
+        GroupModel.getGroupById.mockResolvedValue({ group_id: 1, group_type: 'pg' });
+        const pg = await agent.post('/api/tasks').send({ group_id: 1, title: 'Buy rice', category: 'grocery' });
+        expect(pg.statusCode).toEqual(403);
+        GroupModel.getGroupById.mockResolvedValue({ group_id: 1, group_type: 'friends' });
+    });
+
+    test('watchman rounds are owner-only in every setup', async () => {
+        GroupModel.isMember.mockResolvedValue({ role: 'admin' });
+        const admin = await agent.post('/api/tasks').send({ group_id: 1, title: 'Night round', category: 'security' });
+        expect(admin.statusCode).toEqual(403);
+
+        GroupModel.isMember.mockResolvedValue({ role: 'owner' });
+        const owner = await agent.post('/api/tasks').send({ group_id: 1, title: 'Night round', category: 'security' });
+        expect(owner.statusCode).toEqual(201);
     });
 
     test('invalid categories are rejected', async () => {

@@ -1,7 +1,7 @@
 const TaskModel = require('../models/taskModel');
 const GroupModel = require('../models/groupModel');
 const ActivityLogModel = require('../models/activityLogModel');
-const { canManage } = require('../utils/roles');
+const { canManage, canCreateTask } = require('../utils/roles');
 const { isValidDate } = require('../utils/validation');
 
 // Household task categories seen across Indian PGs and shared flats:
@@ -26,6 +26,15 @@ function validateTaskInput(input, existing = null) {
     if (!TASK_SCHEDULES.includes(schedule)) throw new Error('Invalid task schedule');
     if (dueDate !== null && !isValidDate(dueDate)) throw new Error('Invalid due date');
     return { title, category, schedule, dueDate };
+}
+
+// Task creation follows the household: managers always; in flats and friends
+// groups any member may raise one; in a PG only managers assign.
+async function assertCanAssign(groupId, role, category) {
+    const group = await GroupModel.getGroupById(groupId);
+    if (!group) throw new Error('GROUP_NOT_FOUND');
+    if (!canCreateTask(role, group.group_type, category)) throw new Error('TASK_ASSIGN_FORBIDDEN');
+    return group;
 }
 
 const taskController = {
@@ -59,13 +68,17 @@ const taskController = {
             if (!group_id) return res.status(400).json({ success: false, message: 'group_id is required' });
             const membership = await GroupModel.isMember(group_id, req.session.userId);
             if (!membership) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
-            if (!canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             if (assigned_to !== undefined && assigned_to !== null && assigned_to !== '') {
                 if (!await GroupModel.isMember(group_id, assigned_to)) {
                     return res.status(400).json({ success: false, message: 'MEMBER_NOT_FOUND' });
                 }
             }
             const data = validateTaskInput(req.body);
+            try {
+                await assertCanAssign(group_id, membership.role, data.category);
+            } catch (assignError) {
+                return res.status(403).json({ success: false, message: assignError.message });
+            }
             const task = await TaskModel.createTask({
                 groupId: group_id,
                 assignedById: req.session.userId,
@@ -87,7 +100,6 @@ const taskController = {
             if (!task) return res.status(404).json({ success: false, message: 'TASK_NOT_FOUND' });
             const membership = await GroupModel.isMember(task.group_id, req.session.userId);
             if (!membership) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
-            if (!canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             const { assigned_to } = req.body;
             if (assigned_to !== undefined && assigned_to !== null && assigned_to !== '') {
                 if (!await GroupModel.isMember(task.group_id, assigned_to)) {
@@ -95,6 +107,11 @@ const taskController = {
                 }
             }
             const data = validateTaskInput(req.body, task);
+            try {
+                await assertCanAssign(task.group_id, membership.role, data.category);
+            } catch (assignError) {
+                return res.status(403).json({ success: false, message: assignError.message });
+            }
             const updated = await TaskModel.updateTask(task.task_id, { ...data, assignedToId: assigned_to === undefined ? task.assigned_to : (assigned_to || null) });
             res.json({ success: true, data: updated });
         } catch (error) {
@@ -131,7 +148,11 @@ const taskController = {
             if (!task) return res.status(404).json({ success: false, message: 'TASK_NOT_FOUND' });
             const membership = await GroupModel.isMember(task.group_id, req.session.userId);
             if (!membership) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
-            if (!canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            try {
+                await assertCanAssign(task.group_id, membership.role, task.category);
+            } catch (assignError) {
+                return res.status(403).json({ success: false, message: assignError.message });
+            }
             await TaskModel.deleteTask(task.task_id);
             res.json({ success: true, message: 'Task deleted' });
         } catch (error) {

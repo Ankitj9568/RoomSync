@@ -27,9 +27,18 @@
 > ### Owner MFA
 >
 > `users.totp_secret` / `users.mfa_enabled` (`database/prisma/migrations/0004_user_mfa/`)
-> back TOTP second-factor auth (`utils/totp.js`, RFC 6238, zero dependencies).
+> back TOTP second-factor auth (`backend/utils/totp.js`, RFC 6238, zero dependencies).
 > Any user who owns at least one group must enroll; password login issues a
 > restricted session until enrollment or challenge completes.
+>
+> ### Group types and PG billing
+>
+> `groups.group_type` is one of `pg`, `flat`, or `friends`
+> (`database/prisma/migrations/0005_group_types/`). PG/flat billing lives on
+> `group_settings` (`rent_amount`, `billing_day`) and only the owner may change
+> it. `group_members.room_label` lets PG owners allot beds ("Room 101").
+> Signup intent lives on `users.account_type`
+> (`database/prisma/migrations/0006_user_account_type/`).
 
 ## ER Diagram (Textual)
 

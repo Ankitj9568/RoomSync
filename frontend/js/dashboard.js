@@ -84,7 +84,13 @@ async function loadOwnerHome(groupId) {
             : 'no pending dues';
 
         document.getElementById('ownerRent').textContent = `₹ ${Number(data.rent_collected_month || 0).toFixed(0)}`;
-        document.getElementById('ownerRentSub').textContent = `₹ ${Number(data.rent_pending_month || 0).toFixed(0)} awaiting approval`;
+        document.getElementById('ownerRentSub').textContent = `₹ ${Number(data.rent_pending_month || 0).toFixed(0)} awaiting approval · ₹ ${Number(data.billing.rent_amount || 0).toFixed(0)} due day ${data.billing.billing_day || 1}`;
+
+        const roomsEl = document.getElementById('ownerRooms');
+        const rooms = Object.entries(data.rooms || {}).filter(([label]) => label !== 'Unallotted');
+        roomsEl.innerHTML = rooms.length
+            ? rooms.map(([label, names]) => `<div class="border-bottom py-1"><strong>${esc(label)}</strong>: ${names.map(esc).join(', ')}</div>`).join('')
+            : '';
 
         document.getElementById('ownerTasks').innerHTML =
             `<span class="fw-bold text-warning">${data.tasks.pending}</span> pending · <span class="fw-bold text-success">${data.tasks.done}</span> done`;
