@@ -1,16 +1,24 @@
 // scan.js - Inbuilt camera QR scanner for group invites (logged-in users).
-// Uses the native BarcodeDetector API (no extra dependency). Each group's QR
-// encodes its join URL (/pages/join.html?code=XXXX); scanning resolves the
-// code, previews the group, and offers Join (direct join) or Cancel — or
-// sends an approval request when the group requires it.
+// Prefers the native BarcodeDetector API where the platform has it (Android,
+// macOS); elsewhere falls back to the html5-qrcode library, and a QR image
+// can always be uploaded instead (handy for screenshots shared on WhatsApp).
+// Each group's QR encodes its join URL; scanning resolves the code, previews
+// the group, and offers Join (direct join) or Cancel — or sends an approval
+// request when the group requires it.
 
 let scanStream = null;
 let scanRafId = null;
 let scanCode = null;
 let scanDetector = null;
+let scanLibrary = null;
+let scanLibraryRunning = false;
+
+const QR_LIBRARY_CDN = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('groupChanged', resetScanner);
+    const uploadInput = document.getElementById('qrUploadInput');
+    if (uploadInput) uploadInput.addEventListener('change', handleQrUpload);
 });
 
 // Explicit camera permission step: the scanner only starts after the user
@@ -27,22 +35,31 @@ async function startScanner() {
     const retry = document.getElementById('scanRetryBtn');
     retry.classList.add('d-none');
 
-    if (!('BarcodeDetector' in window)) {
-        status.textContent = 'This browser cannot scan QR codes. Please type the invite code on the Groups page instead.';
-        return;
+    // Native fast path where the platform supports it.
+    if ('BarcodeDetector' in window) {
+        try {
+            scanDetector = new BarcodeDetector({ formats: ['qr_code'] });
+            await startNativeCamera();
+            return;
+        } catch (error) {
+            console.error('Native scanner unavailable, trying library fallback', error);
+        }
     }
 
-    try {
-        scanDetector = new BarcodeDetector({ formats: ['qr_code'] });
-    } catch (error) {
-        status.textContent = 'QR scanning is unavailable here. Please type the invite code on the Groups page instead.';
-        return;
-    }
+    // Library fallback for Windows, Linux, iOS, and other browsers without
+    // BarcodeDetector. Loaded on demand so supporting browsers pay nothing.
+    await startLibraryScanner();
+}
+
+async function startNativeCamera() {
+    const video = document.getElementById('scanVideo');
+    const status = document.getElementById('scanStatus');
+    const retry = document.getElementById('scanRetryBtn');
 
     try {
         scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     } catch (error) {
-        status.textContent = 'Camera permission is needed to scan. Allow camera access and retry.';
+        status.textContent = 'Camera permission is needed to scan. Allow camera access and retry, or upload a QR image below.';
         retry.classList.remove('d-none');
         return;
     }
@@ -54,6 +71,68 @@ async function startScanner() {
     scanLoop();
 }
 
+function loadQrLibrary() {
+    if (window.Html5Qrcode) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = QR_LIBRARY_CDN;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Could not load the scanner library. Check your connection and retry.'));
+        document.head.appendChild(script);
+    });
+}
+
+async function startLibraryScanner() {
+    const status = document.getElementById('scanStatus');
+    const retry = document.getElementById('scanRetryBtn');
+    const readerEl = document.getElementById('qrLibraryReader');
+
+    try {
+        await loadQrLibrary();
+    } catch (error) {
+        status.textContent = error.message + ' You can still upload a QR image below once online.';
+        return;
+    }
+
+    try {
+        stopCamera();
+        readerEl.classList.remove('d-none');
+        scanLibrary = new window.Html5Qrcode('qrLibraryReader');
+        await scanLibrary.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            decodedText => onScanned(decodedText),
+            () => {}
+        );
+        scanLibraryRunning = true;
+        status.textContent = 'Point the camera at the group QR code...';
+    } catch (error) {
+        console.error('Library scanner failed', error);
+        status.textContent = 'Could not start the camera here. Upload a QR image below instead.';
+        retry.classList.remove('d-none');
+    }
+}
+
+async function handleQrUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    const status = document.getElementById('scanStatus');
+    status.textContent = 'Reading QR image...';
+
+    try {
+        await loadQrLibrary();
+        const readerEl = document.getElementById('qrLibraryReader');
+        if (!scanLibraryRunning && readerEl) readerEl.innerHTML = '';
+        const scanner = scanLibrary && scanLibraryRunning ? scanLibrary : new window.Html5Qrcode('qrLibraryReader');
+        const decoded = await scanner.scanFile(file, true);
+        await onScanned(decoded);
+    } catch (error) {
+        console.error('QR upload failed', error);
+        status.textContent = 'No readable RoomSync QR found in that image. Try another screenshot.';
+    }
+}
+
 function stopCamera() {
     if (scanRafId) cancelAnimationFrame(scanRafId);
     scanRafId = null;
@@ -61,7 +140,18 @@ function stopCamera() {
         scanStream.getTracks().forEach(track => track.stop());
         scanStream = null;
     }
+    if (scanLibraryRunning && scanLibrary) {
+        scanLibraryRunning = false;
+        scanLibrary.stop().catch(() => {}).finally(() => {
+            try { scanLibrary.clear(); } catch { /* already cleared */ }
+        });
+    }
     document.getElementById('scanVideo').classList.add('d-none');
+    const readerEl = document.getElementById('qrLibraryReader');
+    if (readerEl) {
+        readerEl.classList.add('d-none');
+        readerEl.innerHTML = '';
+    }
 }
 
 async function scanLoop() {
