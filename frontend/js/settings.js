@@ -1,14 +1,23 @@
 // settings.js
 
+let settingsLoadedFor = null;
+
+function requestSettingsData() {
+    const groupId = getActiveGroupId();
+    if (!groupId || settingsLoadedFor === String(groupId)) return;
+    loadGroupSettings();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadSettingsProfile();
     loadMfaSection();
 
-    if (getActiveGroupId()) {
-        loadGroupSettings();
-    }
-    
+    // Group settings wait for the navbar-validated group (groupReady); a
+    // stale stored id would 403 and bounce to the groups page.
+    window.addEventListener('groupReady', () => requestSettingsData());
+
     window.addEventListener('groupChanged', () => {
+        settingsLoadedFor = null;
         loadGroupSettings();
     });
     
@@ -55,6 +64,7 @@ async function handleProfileSave(e) {
 async function loadGroupSettings() {
     const groupId = getActiveGroupId();
     if (!groupId) return;
+    settingsLoadedFor = String(groupId);
     
     try {
         const res = await apiFetch(`/api/groups/${groupId}`);

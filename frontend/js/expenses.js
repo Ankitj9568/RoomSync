@@ -1,16 +1,23 @@
 // expenses.js - Expenses Logic
 
 let groupMembers = [];
+let expensesLoadedFor = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (getActiveGroupId()) {
-        fetchGroupMembers().then(() => loadExpenses());
-    }
-    
-    window.addEventListener('groupChanged', () => {
-        fetchGroupMembers().then(() => loadExpenses());
-    });
+    // Wait for the navbar to validate the active group (groupReady) instead
+    // of firing with a possibly stale stored id, which 403s and bounces to
+    // the groups page.
+    window.addEventListener('groupReady', () => requestExpensesData());
+    window.addEventListener('groupChanged', () => requestExpensesData(true));
 });
+
+function requestExpensesData(force = false) {
+    const groupId = getActiveGroupId();
+    if (!groupId) return;
+    if (!force && expensesLoadedFor === String(groupId)) return;
+    expensesLoadedFor = String(groupId);
+    fetchGroupMembers().then(() => loadExpenses());
+}
 
 async function fetchGroupMembers() {
     const groupId = getActiveGroupId();

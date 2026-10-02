@@ -1,23 +1,28 @@
 // groceries.js - Grocery Log Integration
 
 let groupMembers = [];
+let groceriesLoadedFor = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (getActiveGroupId()) {
-        loadGroceries();
-        fetchGroupMembers();
-    }
-    
-    window.addEventListener('groupChanged', () => {
-        loadGroceries();
-        fetchGroupMembers();
-    });
+    // Wait for the navbar-validated group (groupReady); a stale stored id
+    // would 403 and bounce to the groups page.
+    window.addEventListener('groupReady', () => requestGroceriesData());
+    window.addEventListener('groupChanged', () => requestGroceriesData(true));
 
     const addGroceryForm = document.getElementById('addGroceryForm');
     if (addGroceryForm) {
         addGroceryForm.addEventListener('submit', handleAddGrocery);
     }
 });
+
+function requestGroceriesData(force = false) {
+    const groupId = getActiveGroupId();
+    if (!groupId) return;
+    if (!force && groceriesLoadedFor === String(groupId)) return;
+    groceriesLoadedFor = String(groupId);
+    loadGroceries();
+    fetchGroupMembers();
+}
 
 async function fetchGroupMembers() {
     const groupId = getActiveGroupId();

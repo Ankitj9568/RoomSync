@@ -1,5 +1,25 @@
 // groups.js - Group Management Logic
 
+let groupsLoadedFor = null;
+
+function requestGroupData(force = false) {
+    const groupId = getActiveGroupId();
+    if (!groupId) {
+        renderEmptyGroupState();
+        return;
+    }
+    if (!force && groupsLoadedFor === String(groupId)) return;
+    groupsLoadedFor = String(groupId);
+    loadGroupData();
+}
+
+function renderEmptyGroupState() {
+    const tbody = document.getElementById('membersTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active group selected. Create or join one above.</td></tr>';
+    const logs = document.getElementById('activityLogContainer');
+    if (logs) logs.innerHTML = '<p class="text-muted">No active group selected.</p>';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Preselect group type from owner onboarding (groups.html?type=pg).
     const typeParam = new URLSearchParams(window.location.search).get('type');
@@ -13,14 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
         radio.addEventListener('change', updateGroupTypeHint);
     });
 
-    // Initial data load if a group is active
+    // My Groups list needs no group id; group details wait for the
+    // navbar-validated group (groupReady) so a stale stored id cannot 403
+    // and reload-loop this page.
     loadMyGroupsList();
-    if (getActiveGroupId()) {
-        loadGroupData();
-    }
-    
-    // Listen for group changes
-    window.addEventListener('groupChanged', loadGroupData);
+    window.addEventListener('groupReady', () => requestGroupData());
+    window.addEventListener('groupChanged', () => requestGroupData(true));
 
     // Create Group Form
     const createGroupForm = document.getElementById('createGroupForm');

@@ -3,18 +3,25 @@
 let taskFilter = 'pending';
 let taskMembersCache = [];
 let iAmTaskManager = false;
+let tasksLoadedFor = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.addEventListener('groupReady', loadTasksPage);
-    window.addEventListener('groupChanged', loadTasksPage);
-
-    if (getActiveGroupId()) {
-        loadTasksPage();
-    }
+    // groupReady carries the navbar-validated group id; loading directly with
+    // a stale stored id would 403 and bounce to the groups page.
+    window.addEventListener('groupReady', () => requestTasksData());
+    window.addEventListener('groupChanged', () => requestTasksData(true));
 
     const taskForm = document.getElementById('taskForm');
     if (taskForm) taskForm.addEventListener('submit', saveTask);
 });
+
+function requestTasksData(force = false) {
+    const groupId = getActiveGroupId();
+    if (!groupId) return;
+    if (!force && tasksLoadedFor === String(groupId)) return;
+    tasksLoadedFor = String(groupId);
+    loadTasksPage();
+}
 
 async function loadTasksPage() {
     const groupId = getActiveGroupId();

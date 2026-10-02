@@ -1,19 +1,26 @@
 // shopping-list.js
 
+let shoppingLoadedFor = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    if (getActiveGroupId()) {
-        fetchGroupMembers().then(() => loadShoppingList());
-    }
-    
-    window.addEventListener('groupChanged', () => {
-        fetchGroupMembers().then(() => loadShoppingList());
-    });
+    // Wait for the navbar-validated group (groupReady); a stale stored id
+    // would 403 and bounce to the groups page.
+    window.addEventListener('groupReady', () => requestShoppingData());
+    window.addEventListener('groupChanged', () => requestShoppingData(true));
     
     const form = document.getElementById('addItemForm');
     if (form) {
         form.addEventListener('submit', handleAddItem);
     }
 });
+
+function requestShoppingData(force = false) {
+    const groupId = getActiveGroupId();
+    if (!groupId) return;
+    if (!force && shoppingLoadedFor === String(groupId)) return;
+    shoppingLoadedFor = String(groupId);
+    fetchGroupMembers().then(() => loadShoppingList());
+}
 
 let groupMembers = [];
 

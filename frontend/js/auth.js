@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.success) {
+                    // A stored group belongs to whoever used this browser
+                    // before; drop it so pages never fetch with a stale id.
+                    localStorage.removeItem('activeGroupId');
                     // PG/flat owners pass a second factor before entering.
                     if (response.mfaRequired) {
                         setUserId(response.data.user_id);
@@ -119,6 +122,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.success) {
                     setUserId(response.data.user_id);
+                    // A stored group belongs to whoever used this browser
+                    // before; drop it so pages never fetch with a stale id.
+                    localStorage.removeItem('activeGroupId');
                     const urlParams = new URLSearchParams(window.location.search);
                     let returnTo = urlParams.get('returnTo');
                     if (returnTo) {

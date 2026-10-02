@@ -1,14 +1,21 @@
 // settlements.js - Settlements Logic
 
+let settlementsLoadedFor = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    if (getActiveGroupId()) {
-        loadSettlements();
-    }
-    
-    window.addEventListener('groupChanged', () => {
-        loadSettlements();
-    });
+    // Wait for the navbar-validated group (groupReady); a stale stored id
+    // would 403 and bounce to the groups page.
+    window.addEventListener('groupReady', () => requestSettlementsData());
+    window.addEventListener('groupChanged', () => requestSettlementsData(true));
 });
+
+function requestSettlementsData(force = false) {
+    const groupId = getActiveGroupId();
+    if (!groupId) return;
+    if (!force && settlementsLoadedFor === String(groupId)) return;
+    settlementsLoadedFor = String(groupId);
+    loadSettlements();
+}
 
 async function loadSettlements() {
     const groupId = getActiveGroupId();
