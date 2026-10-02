@@ -12,7 +12,7 @@ const roomSyncLogo = `
 
 const navbarHTML = `
 <!-- Mobile Header (Hidden on Desktop) -->
-<div class="d-lg-none bg-surface shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
+<div class="mobile-app-header d-lg-none bg-surface shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
   <a class="navbar-brand d-flex align-items-center text-decoration-none mb-0" href="/pages/dashboard.html">
       ${roomSyncLogo}
       <span class="fs-4 fw-bold text-primary-custom">RoomSync</span>

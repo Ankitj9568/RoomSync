@@ -24,10 +24,78 @@ function hideLoader() {
     }
 }
 
-// Custom alert modal wrapper for errors
-function showError(message) {
-    alert("Error: " + message); // Simple alert for now, can be upgraded to Bootstrap toast
+// Lightweight Bootstrap-style toast notifications keep feedback visible
+// without blocking the page on mobile with native alert dialogs.
+function showToast(message, variant = 'danger') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `app-toast toast align-items-center border-start border-4 border-${variant}`;
+    toast.setAttribute('role', 'status');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${esc(message)}</div>
+            <button type="button" class="btn-close me-2 m-auto" aria-label="Close"></button>
+        </div>`;
+    container.appendChild(toast);
+    const close = () => toast.remove();
+    toast.querySelector('.btn-close').addEventListener('click', close);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    window.setTimeout(close, 4200);
 }
+
+function showError(message) {
+    showToast(`Error: ${message}`, 'danger');
+}
+
+function showSuccess(message) {
+    showToast(message, 'success');
+}
+
+function enhanceDynamicUI() {
+    document.body.classList.add('page-loaded');
+
+    document.querySelectorAll('.page-container > h2, .page-container > .card, .page-container > .row > *, .page-container > .tab-content').forEach((element, index) => {
+        element.classList.add('reveal-on-scroll');
+        element.style.transitionDelay = `${Math.min(index * 45, 240)}ms`;
+    });
+
+    const observer = 'IntersectionObserver' in window
+        ? new IntersectionObserver(entries => entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        }), { threshold: 0.08 })
+        : null;
+    document.querySelectorAll('.reveal-on-scroll').forEach(element => {
+        if (observer) observer.observe(element);
+        else element.classList.add('is-visible');
+    });
+
+    document.addEventListener('pointerdown', event => {
+        const button = event.target.closest('.btn');
+        if (!button || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const rect = button.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        const size = Math.max(rect.width, rect.height);
+        ripple.className = 'btn-ripple';
+        ripple.style.width = `${size}px`;
+        ripple.style.height = `${size}px`;
+        ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
+        ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+        button.appendChild(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', enhanceDynamicUI);
 
 /**
  * Standard fetch wrapper for all API calls
