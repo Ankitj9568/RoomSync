@@ -170,7 +170,7 @@ async function saveTask(e) {
         bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
         loadTasksPage();
     } catch (error) {
-        alert(error.message || 'Failed to save task');
+        showToast(error.message || 'Failed to save task');
     }
 }
 
@@ -179,7 +179,7 @@ async function flipTaskStatus(taskId, status) {
         await apiFetch(`/api/tasks/${taskId}/status`, { method: 'PATCH', body: { status } });
         loadTasksPage();
     } catch (error) {
-        alert(error.message || 'Failed to update task');
+        showToast(error.message || 'Failed to update task');
     }
 }
 
@@ -189,6 +189,6 @@ async function deleteTask(taskId) {
         await apiFetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
         loadTasksPage();
     } catch (error) {
-        alert(error.message || 'Failed to delete task');
+        showToast(error.message || 'Failed to delete task');
     }
 }

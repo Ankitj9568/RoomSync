@@ -4,6 +4,7 @@ const { captchaSolution } = require('../helpers/captcha');
 jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
     let nextId = 1;
+    users.set('cook@staff.com', { user_id: 9, name: 'Cook', email: 'cook@staff.com', account_type: 'staff' });
     return {
         findByEmail: async email => users.get(String(email).toLowerCase()),
         create: async ({ name, email, password_hash, account_type }) => {
@@ -115,5 +116,19 @@ describe('group types and PG billing', () => {
             name: 'Bad Type', email: `badtype${Date.now()}@test.com`, password: 'password123', account_type: 'guest', ...await captchaSolution(request(app))
         });
         expect(bad.statusCode).toEqual(400);
+    });
+
+    test('staff accounts join via invite as staff, never as members', async () => {
+        GroupModel.getGroupByCode.mockResolvedValue({ group_id: 7, group_name: 'PG', group_code: 'ABC123' });
+        // Cook (staff account from the mock) joins with a fresh agent.
+        const staffAgent = request.agent(app);
+        await staffAgent.post('/api/auth/register').send({
+            name: 'Cook Join', email: `cookjoin${Date.now()}@test.com`, password: 'password123',
+            account_type: 'staff', ...await captchaSolution(staffAgent)
+        });
+        GroupModel.isMember.mockResolvedValue(null);
+        const res = await staffAgent.post('/api/groups/join').send({ code: 'ABC123' });
+        expect(res.statusCode).toEqual(200);
+        expect(GroupModel.addMember).toHaveBeenCalledWith(7, expect.any(Number), 'staff');
     });
 });

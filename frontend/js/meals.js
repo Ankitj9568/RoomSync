@@ -307,7 +307,7 @@ async function saveMealPreferences() {
         
     } catch (error) {
         console.error("Failed to save meal preferences", error);
-        alert(error.message || "Failed to save preferences. It might be past the cutoff time.");
+        showToast(error.message || "Failed to save preferences. It might be past the cutoff time.");
     } finally {
         if (btn) btn.disabled = false;
     }
@@ -361,6 +361,6 @@ async function saveMenu() {
         
     } catch (error) {
         console.error("Failed to save menu", error);
-        alert(error.message || "Failed to save menu");
+        showToast(error.message || "Failed to save menu");
     }
 }

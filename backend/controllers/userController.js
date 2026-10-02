@@ -5,13 +5,15 @@ const userController = {
     async getProfile(req, res) {
         try {
             const userId = req.session.userId;
-            const user = await UserModel.findById(userId);
+            const fullUser = await UserModel.findByIdWithHash(userId);
             
-            if (!user) {
+            if (!fullUser) {
                 return res.status(404).json({ success: false, message: 'User not found' });
             }
-            
-            res.json({ success: true, data: user });
+
+            const { password_hash, ...safeUser } = fullUser;
+            void password_hash;
+            res.json({ success: true, data: { ...safeUser, has_password: Boolean(fullUser.password_hash) } });
         } catch (error) {
             console.error('Get profile error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
@@ -52,8 +54,8 @@ const userController = {
             const userId = req.session.userId;
             const { currentPassword, newPassword } = req.body;
 
-            if (!currentPassword || !newPassword) {
-                return res.status(400).json({ success: false, message: 'Both current and new password are required' });
+            if (!newPassword) {
+                return res.status(400).json({ success: false, message: 'New password is required' });
             }
             if (newPassword.length < 6 || newPassword.length > 72) {
                 return res.status(400).json({ success: false, message: 'Password must be between 6 and 72 characters' });
@@ -65,15 +67,23 @@ const userController = {
                 return res.status(404).json({ success: false, message: 'User not found' });
             }
 
-            const isMatch = await bcrypt.compare(currentPassword, fullUser.password_hash);
-            if (!isMatch) {
-                return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+            // Google-only accounts have no password yet: setting the first
+            // one needs no current password, only the session itself.
+            if (fullUser.password_hash) {
+                if (!currentPassword) {
+                    return res.status(400).json({ success: false, message: 'Both current and new password are required' });
+                }
+                const isMatch = await bcrypt.compare(currentPassword, fullUser.password_hash);
+                if (!isMatch) {
+                    return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+                }
             }
 
             const newHash = await bcrypt.hash(newPassword, 10);
+            const hadPassword = Boolean(fullUser.password_hash);
             await UserModel.updatePassword(userId, newHash);
 
-            res.json({ success: true, message: 'Password changed successfully' });
+            res.json({ success: true, message: hadPassword ? 'Password changed successfully' : 'Password set successfully' });
         } catch (error) {
             console.error('Change password error:', error);
             res.status(500).json({ success: false, message: 'Server error' });

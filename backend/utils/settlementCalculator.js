@@ -3,6 +3,7 @@ const GroceryModel = require('../models/groceryModel');
 const PaymentModel = require('../models/paymentModel');
 const GroupModel = require('../models/groupModel');
 const AdjustmentModel = require('../models/adjustmentModel');
+const { canAccessPeerFinancials } = require('./roles');
 
 const settlementCalculator = {
     async calculateBalances(groupId) {
@@ -61,12 +62,16 @@ const settlementCalculator = {
                 }
             }
 
-            // Subtract everyone's equal share (assuming groceries are shared equally among all members).
-            if (members.length > 0) {
+            // Subtract everyone's equal share. Only roommates share grocery
+            // costs: staff (e.g. the cook buying vegetables) are credited for
+            // what they paid but never charged a share, like expenses.
+            // A missing role predates roles and is treated as a member.
+            const sharers = members.filter(member => canAccessPeerFinancials(member.role || 'member'));
+            if (sharers.length > 0) {
                 const totalCents = Math.round(totalAmount * 100);
-                const baseCents = Math.floor(totalCents / members.length);
-                let remainder = totalCents - (baseCents * members.length);
-                members.forEach(member => {
+                const baseCents = Math.floor(totalCents / sharers.length);
+                let remainder = totalCents - (baseCents * sharers.length);
+                sharers.forEach(member => {
                     const cents = baseCents + (remainder-- > 0 ? 1 : 0);
                     balances[String(member.user_id)] -= cents / 100;
                 });

@@ -148,7 +148,7 @@ async function recordPayment() {
     }
     
     if (!amount) {
-        alert("Please enter an amount.");
+        showToast("Please enter an amount.");
         return;
     }
     
@@ -175,7 +175,7 @@ async function recordPayment() {
         
     } catch (error) {
         console.error("Failed to record payment", error);
-        alert(error.message || "Failed to log payment");
+        showToast(error.message || "Failed to log payment");
     }
 }
 
@@ -189,7 +189,7 @@ async function deletePayment(paymentId) {
         loadSettlements();
     } catch (error) {
         console.error("Failed to delete payment", error);
-        alert(error.message || 'Failed to delete payment');
+        showToast(error.message || 'Failed to delete payment');
     }
 }
 
@@ -290,6 +290,6 @@ async function verifyPayment(paymentId, status) {
         loadSettlements(); // Refresh both debts and history
     } catch (error) {
         console.error("Verification failed", error);
-        alert(error.message || "Failed to verify payment");
+        showToast(error.message || "Failed to verify payment");
     }
 }

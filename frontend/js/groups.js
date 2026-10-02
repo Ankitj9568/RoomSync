@@ -58,14 +58,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     body
                 });
                 const roleNote = body.group_type === 'pg' ? ' You are the owner.' : '';
-                alert(`Group created successfully! Invite Code: ${res.data.group_code}.${roleNote}`);
+                showSuccess(`Group created successfully! Invite Code: ${res.data.group_code}.${roleNote}`);
                 createGroupForm.reset();
                 
                 // Set the new group as active and reload navbar
                 localStorage.setItem('activeGroupId', res.data.group_id);
                 window.location.reload();
             } catch (error) {
-                alert(error.message || 'Failed to create group');
+                showToast(error.message || 'Failed to create group');
             }
         });
     }
@@ -85,14 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     body: { code }
                 });
-                alert('Joined group successfully!');
+                showSuccess('Joined group successfully!');
                 joinGroupForm.reset();
                 if (res.data && res.data.group_id) {
                     localStorage.setItem('activeGroupId', res.data.group_id);
                 }
                 window.location.reload();
             } catch (error) {
-                alert(error.message || 'Failed to join group');
+                showToast(error.message || 'Failed to join group');
             }
         });
     }
@@ -116,9 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: { group_id: groupId, name, email }
                     });
                     if (res.data && res.data.temporary_password) {
-                        alert(`Staff account created! Temporary password (share once): ${res.data.temporary_password}`);
+                        showSuccess(`Staff account created! Temporary password (share once): ${res.data.temporary_password}`);
                     } else {
-                        alert('Existing user added as staff.');
+                        showSuccess('Existing user added as staff.');
                     }
                 } else {
                     await apiFetch('/api/groups/members/add', {
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 loadGroupData(); // Reload data
             } catch (error) {
-                alert(error.message || 'Failed to add member');
+                showToast(error.message || 'Failed to add member');
             }
         });
     }
@@ -223,7 +223,7 @@ async function saveRoomLabel(userId, roomLabel) {
         });
         loadGroupData();
     } catch (error) {
-        alert(error.message || 'Failed to save room');
+        showToast(error.message || 'Failed to save room');
         loadGroupData();
     }
 }
@@ -263,7 +263,7 @@ async function changeMemberRole(userId, role) {
         });
         loadGroupData();
     } catch (error) {
-        alert(error.message || 'Failed to update role. The group must keep at least one manager.');
+        showToast(error.message || 'Failed to update role. The group must keep at least one manager.');
         loadGroupData();
     }
 }
@@ -281,7 +281,7 @@ async function removeMember(userId) {
         });
         loadGroupData();
     } catch (error) {
-        alert(error.message || 'Failed to remove member. You might not have admin privileges.');
+        showToast(error.message || 'Failed to remove member. You might not have admin privileges.');
     }
 }
 

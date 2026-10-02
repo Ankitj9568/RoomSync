@@ -64,6 +64,7 @@ const groceryController = {
         try {
             const grocery = await GroceryModel.getGroceryById(req.params.id);
             if (!grocery) return res.status(404).json({ success: false, message: 'GROCERY_NOT_FOUND' });
+            if (!await GroupModel.isMember(grocery.group_id, req.session.userId)) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             if (Number(grocery.purchased_by) !== Number(req.session.userId)) return res.status(403).json({ success: false, message: 'NOT_PURCHASER' });
             const purchaseDate = String(grocery.purchase_date).slice(0, 10);
             if (!todayMatches(purchaseDate)) return res.status(403).json({ success: false, message: 'CORRECTION_WINDOW_EXPIRED' });
@@ -86,6 +87,7 @@ const groceryController = {
         try {
             const grocery = await GroceryModel.getGroceryById(req.params.id);
             if (!grocery) return res.status(404).json({ success: false, message: 'GROCERY_NOT_FOUND' });
+            if (!await GroupModel.isMember(grocery.group_id, req.session.userId)) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             if (Number(grocery.purchased_by) !== Number(req.session.userId)) return res.status(403).json({ success: false, message: 'NOT_PURCHASER' });
             if (!todayMatches(String(grocery.purchase_date).slice(0, 10))) return res.status(403).json({ success: false, message: 'CORRECTION_WINDOW_EXPIRED' });
             await GroceryModel.deleteGrocery(req.params.id);

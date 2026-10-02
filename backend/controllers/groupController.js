@@ -147,7 +147,11 @@ const groupController = {
                 return res.json({ success: true, pending: true, message: 'Join request sent to admin' });
             }
 
-            await GroupModel.addMember(group.group_id, userId);
+            // Staff accounts join as staff so invite links never escalate
+            // cooks and maids into roommate financials by accident.
+            const joiningUser = await UserModel.findById(userId);
+            const joinRole = joiningUser && joiningUser.account_type === 'staff' ? 'staff' : 'member';
+            await GroupModel.addMember(group.group_id, userId, joinRole);
             await ActivityLogModel.create(group.group_id, userId, 'JOIN_GROUP', 'Joined the group using an invite code');
             res.json({ success: true, data: { group_id: group.group_id, group_name: group.group_name } });
         } catch (error) {
@@ -184,7 +188,11 @@ const groupController = {
 
             await GroupModel.updateJoinRequestStatus(reqId, status);
             if (status === 'approved') {
-                if (!await GroupModel.isMember(id, request.user_id)) await GroupModel.addMember(id, request.user_id);
+                if (!await GroupModel.isMember(id, request.user_id)) {
+                    const approvedUser = await UserModel.findById(request.user_id);
+                    const approvedRole = approvedUser && approvedUser.account_type === 'staff' ? 'staff' : 'member';
+                    await GroupModel.addMember(id, request.user_id, approvedRole);
+                }
                 await ActivityLogModel.create(id, request.user_id, 'JOIN_GROUP', 'Joined the group via admin approval');
             }
             res.json({ success: true, message: `Request ${status}` });

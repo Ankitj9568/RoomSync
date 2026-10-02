@@ -72,14 +72,23 @@ async function handleJoin() {
         });
         
         if (res.pending) {
-            alert('Your request to join has been sent to the group admins for approval.');
+            showSuccess('Your request to join has been sent to the group admins for approval.');
             window.location.href = 'dashboard.html';
         } else {
-            alert('Successfully joined the group!');
+            showSuccess('Successfully joined the group!');
             window.location.href = 'dashboard.html';
         }
     } catch (error) {
-        alert(error.message || 'Failed to join group.');
+        // Already inside: land on the dashboard instead of erroring.
+        if (error.message === 'ALREADY_A_MEMBER') {
+            try {
+                const info = await apiFetch(`/api/groups/code/${inviteCode}`, {}, true);
+                if (info.success && info.data) localStorage.setItem('activeGroupId', info.data.group_id);
+            } catch { /* fall through to dashboard */ }
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        showToast(error.message || 'Failed to join group.');
         btn.disabled = false;
         btn.textContent = 'Join Now';
     }

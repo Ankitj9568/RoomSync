@@ -122,4 +122,16 @@ describe('task board authorization', () => {
         const res = await agent.patch('/api/tasks/5/status').send({ status: 'done' });
         expect(res.statusCode).toEqual(403);
     });
+
+    test('any member can claim and complete an unassigned task', async () => {
+        GroupModel.isMember.mockResolvedValue({ role: 'member' });
+        TaskModel.getTaskById.mockResolvedValue({
+            task_id: 6, group_id: 1, assigned_to: null, status: 'pending',
+            title: 'Sweep stairs', category: 'cleaning', schedule: 'once', due_date: null
+        });
+        const res = await agent.patch('/api/tasks/6/status').send({ status: 'done' });
+        expect(res.statusCode).toEqual(200);
+        expect(TaskModel.updateTask).toHaveBeenCalledWith(6, expect.objectContaining({ assignedToId: userId }));
+        expect(TaskModel.updateStatus).toHaveBeenCalledWith(6, 'done');
+    });
 });

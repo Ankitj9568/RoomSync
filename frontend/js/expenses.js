@@ -220,7 +220,7 @@ async function saveExpense() {
     const isCustom = document.getElementById('splitCustom').checked;
     
     if (!title || !amount) {
-        alert("Please provide a title and amount.");
+        showToast("Please provide a title and amount.");
         return;
     }
     
@@ -235,7 +235,7 @@ async function saveExpense() {
             }
         });
         if (Math.abs(payersSum - amount) > 0.01) {
-            alert("The sum of amounts paid must equal the total expense amount.");
+            showToast("The sum of amounts paid must equal the total expense amount.");
             return;
         }
     } 
@@ -251,7 +251,7 @@ async function saveExpense() {
             }
         });
         if (Math.abs(splitsSum - amount) > 0.01) {
-            alert("The sum of custom splits must equal the total expense amount.");
+            showToast("The sum of custom splits must equal the total expense amount.");
             return;
         }
     }
@@ -280,7 +280,7 @@ async function saveExpense() {
         loadExpenses();
     } catch (error) {
         console.error("Failed to save expense", error);
-        alert(error.message || "Failed to save expense");
+        showToast(error.message || "Failed to save expense");
     }
 }
 
@@ -295,7 +295,7 @@ async function saveLoan() {
     const note = document.getElementById('loanNote').value;
     
     if (!targetUserId || !amount) {
-        alert("Please select a roommate and amount.");
+        showToast("Please select a roommate and amount.");
         return;
     }
     
@@ -327,7 +327,7 @@ async function saveLoan() {
         loadExpenses();
     } catch (error) {
         console.error("Failed to save loan", error);
-        alert(error.message || "Failed to save loan");
+        showToast(error.message || "Failed to save loan");
     }
 }
 async function deleteExpense(id) {
@@ -336,6 +336,6 @@ async function deleteExpense(id) {
         await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' });
         loadExpenses();
     } catch(e) {
-        alert(e.message || "Failed to delete");
+        showToast(e.message || "Failed to delete");
     }
 }

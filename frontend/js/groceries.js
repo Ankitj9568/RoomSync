@@ -276,7 +276,7 @@ async function handleAddGrocery(e) {
         
         loadGroceries();
     } catch (error) {
-        alert(error.message || 'Failed to add grocery');
+        showToast(error.message || 'Failed to add grocery');
     }
 }
 
@@ -286,6 +286,6 @@ async function deleteGrocery(id) {
         await apiFetch(`/api/groceries/${id}`, { method: 'DELETE' });
         loadGroceries();
     } catch (error) {
-        alert(error.message || 'Failed to delete grocery');
+        showToast(error.message || 'Failed to delete grocery');
     }
 }

@@ -95,9 +95,9 @@ describe('Settlement Calculator (White-box)', () => {
 
     it('should include manual adjustments and preserve grocery cents', async () => {
         GroupModel.getGroupMembers.mockResolvedValue([
-            { user_id: 1, name: 'Alice' },
-            { user_id: 2, name: 'Bob' },
-            { user_id: 3, name: 'Charlie' }
+            { user_id: 1, name: 'Alice', role: 'member' },
+            { user_id: 2, name: 'Bob', role: 'member' },
+            { user_id: 3, name: 'Charlie', role: 'member' }
         ]);
         ExpenseModel.getExpensesByGroup.mockResolvedValue([]);
         GroceryModel.getGroceriesByGroup.mockResolvedValue([
@@ -113,5 +113,29 @@ describe('Settlement Calculator (White-box)', () => {
         expect(result.balances['1']).toBeCloseTo(76.66, 2);
         expect(result.balances['2']).toBeCloseTo(-43.33, 2);
         expect(result.balances['3']).toBeCloseTo(-33.33, 2);
+    });
+
+    it('should credit staff purchases without charging staff or owners a share', async () => {
+        GroupModel.getGroupMembers.mockResolvedValue([
+            { user_id: 1, name: 'Alice', role: 'member' },
+            { user_id: 2, name: 'Bob', role: 'member' },
+            { user_id: 3, name: 'Cook', role: 'staff' },
+            { user_id: 4, name: 'Owner', role: 'owner' }
+        ]);
+        ExpenseModel.getExpensesByGroup.mockResolvedValue([]);
+        // Cook buys vegetables worth 200 with their own money.
+        GroceryModel.getGroceriesByGroup.mockResolvedValue([
+            { amount: 200, purchased_by: 3, contributors: [{ user_id: 3, amount_paid: 200 }] }
+        ]);
+        PaymentModel.getPaymentsByGroup.mockResolvedValue([]);
+        AdjustmentModel.getAdjustmentsByGroup.mockResolvedValue([]);
+
+        const result = await settlementCalculator.calculateBalances(1);
+        // 200 split between the two roommates only; cook is owed 200.
+        expect(result.balances['3']).toBe(200);
+        expect(result.balances['1']).toBe(-100);
+        expect(result.balances['2']).toBe(-100);
+        expect(result.balances['4']).toBe(0);
+        expect(Object.values(result.balances).reduce((sum, balance) => sum + balance, 0)).toBe(0);
     });
 });

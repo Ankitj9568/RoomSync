@@ -13,8 +13,9 @@
 > `database/prisma/migrations/0002_membership_roles/`). Owners manage the group exactly
 > like admins. Staff accounts (chef, maid, caretaker) can use meals, menus,
 > groceries, and the shopping list, but are excluded from expenses, payments,
-> settlements, adjustments, and spending analytics, and are never included in
-> expense splits.
+> settlements, adjustments, and spending analytics, are never included in
+> expense splits, and never share grocery costs (though they are credited for
+> what they pay).
 >
 > ### Household tasks
 >

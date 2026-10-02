@@ -130,9 +130,19 @@ const taskController = {
             const status = String(req.body.status || '').toLowerCase();
             if (!TASK_STATUSES.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status' });
             // Managers can flip any task; everyone else only their own assignment.
+            // Unassigned chores can be claimed by any member doing the work.
             const isAssignee = Number(task.assigned_to) === Number(req.session.userId);
             if (!canManage(membership.role) && !isAssignee) {
-                return res.status(403).json({ success: false, message: 'Only the assignee can update this task' });
+                if (task.assigned_to !== null && task.assigned_to !== undefined) {
+                    return res.status(403).json({ success: false, message: 'Only the assignee can update this task' });
+                }
+                await TaskModel.updateTask(task.task_id, {
+                    title: task.title,
+                    category: task.category,
+                    assignedToId: req.session.userId,
+                    schedule: task.schedule,
+                    dueDate: task.due_date
+                });
             }
             const updated = await TaskModel.updateStatus(task.task_id, status);
             res.json({ success: true, data: updated });

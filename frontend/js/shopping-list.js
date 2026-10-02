@@ -123,7 +123,7 @@ async function handleAddItem(e) {
         document.getElementById('addItemForm').reset();
         loadShoppingList();
     } catch (e) {
-        alert(e.message || "Failed to add item");
+        showToast(e.message || "Failed to add item");
     }
 }
 
@@ -143,7 +143,7 @@ async function updateStatus(id, newStatus) {
         });
         loadShoppingList();
     } catch (e) {
-        alert(e.message || "Failed to update status");
+        showToast(e.message || "Failed to update status");
         loadShoppingList(); // revert UI
     }
 }
@@ -154,6 +154,6 @@ async function deleteItem(id) {
         await apiFetch(`/api/shopping-list/${id}`, { method: 'DELETE' });
         loadShoppingList();
     } catch (e) {
-        alert(e.message || "Failed to delete item");
+        showToast(e.message || "Failed to delete item");
     }
 }

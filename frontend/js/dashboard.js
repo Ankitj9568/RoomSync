@@ -157,7 +157,7 @@ async function completeStaffTask(taskId) {
         await apiFetch(`/api/tasks/${taskId}/status`, { method: 'PATCH', body: { status: 'done' } });
         requestDashboardData(true);
     } catch (error) {
-        alert(error.message || 'Failed to complete task');
+        showToast(error.message || 'Failed to complete task');
     }
 }
 

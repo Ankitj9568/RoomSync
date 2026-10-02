@@ -224,7 +224,7 @@ async function confirmScanJoin() {
             body: { code: scanCode }
         });
         if (res.pending) {
-            alert('Your request to join has been sent to the group admins for approval.');
+            showSuccess('Your request to join has been sent to the group admins for approval.');
         } else if (res.data && res.data.group_id) {
             localStorage.setItem('activeGroupId', res.data.group_id);
             window.location.href = 'dashboard.html';
@@ -232,7 +232,7 @@ async function confirmScanJoin() {
         }
         window.location.href = 'groups.html';
     } catch (error) {
-        alert(error.message || 'Failed to join group.');
+        showToast(error.message || 'Failed to join group.');
     }
 }
 

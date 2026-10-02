@@ -38,6 +38,14 @@ async function loadSettingsProfile() {
             document.getElementById('profileEmail').value = res.data.email || '';
             document.getElementById('profilePhone').value = res.data.phone || '';
             document.getElementById('profileUpi').value = res.data.upi_id || '';
+            // Google-only accounts have no password yet: hide the current
+            // password field and offer to set one instead.
+            if (res.data.has_password === false) {
+                const currentWrap = document.getElementById('currentPassword').closest('.mb-3');
+                if (currentWrap) currentWrap.style.display = 'none';
+                const pwButton = document.querySelector('#changePasswordForm button[type="submit"]');
+                if (pwButton) pwButton.innerHTML = '<i class="bi bi-shield-lock me-1"></i> Set Password';
+            }
         }
     } catch (error) {
         console.error("Failed to load profile", error);
@@ -55,9 +63,9 @@ async function handleProfileSave(e) {
             method: 'PUT',
             body: { name, phone, upi_id: upi }
         });
-        alert('Profile updated successfully!');
+        showSuccess('Profile updated successfully!');
     } catch (error) {
-        alert(error.message || 'Failed to update profile');
+        showToast(error.message || 'Failed to update profile');
     }
 }
 
@@ -70,7 +78,7 @@ async function loadGroupSettings() {
         const res = await apiFetch(`/api/groups/${groupId}`);
         if (res.success && res.data) {
             const groupSelect = document.getElementById('groupSelect');
-            groupSelect.innerHTML = `<option value="${res.data.group_id}">${res.data.name}</option>`;
+            groupSelect.innerHTML = `<option value="${res.data.group_id}">${esc(res.data.name)}</option>`;
             
             const joinUrl = `${window.location.origin}/pages/join.html?code=${res.data.join_code}&src=roomsync`;
             document.getElementById('groupCode').value = joinUrl;
@@ -167,7 +175,7 @@ async function loadGroupSettings() {
                     } catch (e) {
                         console.error('Failed to update direct join setting:', e);
                         this.checked = !this.checked; // revert UI
-                        alert('Failed to update setting');
+                        showToast('Failed to update setting');
                     }
                 };
                 
@@ -213,7 +221,7 @@ async function saveAdjustment(event) {
     const groupId = getActiveGroupId();
     const fromUser = document.getElementById('adjustmentFromUser').value;
     const toUser = document.getElementById('adjustmentToUser').value;
-    if (fromUser === toUser) return alert('Select two different members');
+    if (fromUser === toUser) return showToast('Select two different members');
     try {
         await apiFetch('/api/adjustments', { method: 'POST', body: {
             group_id: groupId,
@@ -225,7 +233,7 @@ async function saveAdjustment(event) {
         event.target.reset();
         loadAdjustments(groupId);
     } catch (error) {
-        alert(error.message || 'Could not add adjustment');
+        showToast(error.message || 'Could not add adjustment');
     }
 }
 
@@ -235,7 +243,7 @@ async function deleteAdjustment(id) {
         await apiFetch(`/api/adjustments/${id}`, { method: 'DELETE' });
         loadAdjustments(getActiveGroupId());
     } catch (error) {
-        alert(error.message || 'Could not delete adjustment');
+        showToast(error.message || 'Could not delete adjustment');
     }
 }
 
@@ -279,7 +287,7 @@ async function processJoinRequest(reqId, status) {
         loadJoinRequests(groupId);
         loadGroupSettings(); // Reload members if approved
     } catch (e) {
-        alert(e.message || 'Failed to process request');
+        showToast(e.message || 'Failed to process request');
     }
 }
 
@@ -296,7 +304,7 @@ async function leaveActiveGroup() {
             localStorage.removeItem('activeGroupId');
             window.location.href = '/pages/groups.html';
         } else {
-            alert(error.message || 'Could not leave group');
+            showToast(error.message || 'Could not leave group');
         }
     }
 }
@@ -312,15 +320,15 @@ async function saveBilling() {
                 billing_day: Number(document.getElementById('billingDay').value || 1)
             }
         });
-        alert('Billing saved!');
+        showSuccess('Billing saved!');
     } catch (error) {
-        alert(error.message || 'Failed to save billing');
+        showToast(error.message || 'Failed to save billing');
     }
 }
 
 function copyGroupCode() {    const code = document.getElementById('groupCode').value;
     navigator.clipboard.writeText(code).then(() => {
-        alert('Join link copied to clipboard!');
+        showSuccess('Join link copied to clipboard!');
     });
 }
 
@@ -331,7 +339,7 @@ async function handlePasswordChange(e) {
     const confirmNew = document.getElementById('confirmNewPassword').value;
 
     if (newPassword !== confirmNew) {
-        alert('New passwords do not match');
+        showToast('New passwords do not match');
         return;
     }
 
@@ -340,10 +348,10 @@ async function handlePasswordChange(e) {
             method: 'PUT',
             body: { currentPassword, newPassword }
         });
-        alert('Password changed successfully!');
+        showSuccess('Password changed successfully!');
         e.target.reset();
     } catch (error) {
-        alert(error.message || 'Failed to change password');
+        showToast(error.message || 'Failed to change password');
     }
 }
 
@@ -382,10 +390,10 @@ async function loadMfaSection() {
                     method: 'POST',
                     body: { token: document.getElementById('mfaConfirmCode').value }
                 });
-                alert('Two-step verification enabled!');
+                showSuccess('Two-step verification enabled!');
                 window.location.href = '/pages/dashboard.html';
             } catch (error) {
-                alert(error.message || 'Invalid code, try again');
+                showToast(error.message || 'Invalid code, try again');
             }
         }, { once: true });
     } catch (error) {
