@@ -293,3 +293,14 @@ function applyRoleToNav(role) {
         link.classList.toggle('d-none', hideFinancials);
     });
 }
+
+// Back-button safety: browsers can restore the page DOM from the
+// back-forward cache without re-running scripts, which makes a logged-out
+// session look logged in. Re-validate on restore; apiFetch redirects to the
+// login page automatically when the session is gone.
+if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', event => {
+        if (!event.persisted || typeof apiFetch === 'undefined') return;
+        apiFetch('/api/users/me', {}, true).catch(() => {});
+    });
+}

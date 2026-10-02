@@ -16,7 +16,21 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(require('./middleware/securityHeaders'));
-app.use(express.static(path.join(__dirname, 'public')));
+// Authenticated content must never be served from browser cache: after logout,
+// the back button would otherwise redisplay a stale logged-in page.
+app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+    next();
+});
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders(res, filePath) {
+        if (String(filePath).endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-store');
+            res.setHeader('Pragma', 'no-cache');
+        }
+    }
+}));
 app.get('/favicon.ico', (req, res) => {
     res.type('image/svg+xml').sendFile(path.join(__dirname, 'public', 'favicon.svg'));
 });
@@ -27,18 +41,8 @@ app.set('trust proxy', 1);
 // Signed cookie sessions work across Vercel serverless invocations. The
 // cookie contains only the user id and display name; it is signed, httpOnly,
 // and never used as a source of authorization without a database membership check.
-app.use(cookieSession({
-    name: 'roomsync.session',
-    keys: [process.env.SESSION_SECRET || 'development-only-secret'],
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    cookie: {
-        httpOnly: true,
-        // Lax permits the top-level GET callback from Google OAuth while still
-        // blocking cookies on cross-site subrequests.
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production'
-    }
-}));
+const { sessionOptions } = require('./config/session');
+app.use(cookieSession(sessionOptions()));
 
 configureGoogleOAuth();
 app.use(passport.initialize());
