@@ -51,13 +51,21 @@ router.post('/mfa/disable', authRateLimit, authMiddleware, authController.mfaDis
 
 router.get('/google', (req, res, next) => {
     if (!configureGoogleOAuth()) return res.status(503).json({ success: false, message: 'GOOGLE_OAUTH_NOT_CONFIGURED' });
-    const state = crypto.randomBytes(24).toString('hex');
-    req.session.oauthState = state;
+    const csrf = crypto.randomBytes(24).toString('hex');
+    req.session.oauthState = csrf;
+    // Carry the role selected on the login/register form into the round
+    // trip so Google sign-ups honor it; verified again on callback.
+    const { normalizeAccountType, isValidAccountType } = require('../utils/roles');
+    const role = String(req.query.as || 'roommate');
+    const accountType = isValidAccountType(role) ? normalizeAccountType(role) : 'roommate';
+    const state = `${csrf}.${accountType}`;
     passport.authenticate('google', { session: false, scope: ['profile', 'email'], state })(req, res, next);
 });
 router.get('/google/callback', (req, res, next) => {
     if (!configureGoogleOAuth()) return res.redirect('/pages/login.html?oauth=not-configured');
-    if (!req.session || !req.query.state || req.session.oauthState !== req.query.state) {
+    const { parseOAuthState } = require('../middleware/googleOAuth');
+    const parsed = parseOAuthState(req.query.state);
+    if (!req.session || !parsed || req.session.oauthState !== parsed.csrf) {
         return res.redirect('/pages/login.html?oauth=invalid-state');
     }
     req.session.oauthState = null;

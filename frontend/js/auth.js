@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selected && hint && loginRoleHints[selected.value]) hint.textContent = loginRoleHints[selected.value];
             const roleName = document.getElementById('loginRoleName');
             if (selected && roleName) roleName.textContent = selected.value === 'owner' ? 'PG / Flat Owner' : selected.value.charAt(0).toUpperCase() + selected.value.slice(1);
+            // The Gmail path must carry the same selection into OAuth state.
+            const googleBtn = document.getElementById('googleLoginBtn');
+            if (googleBtn && selected) googleBtn.href = `/api/auth/google?as=${selected.value}`;
         };
         const loginAsParam = new URLSearchParams(window.location.search).get('as');
         if (loginAsParam && loginRoleHints[loginAsParam]) {
@@ -136,6 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const selected = document.querySelector('input[name="accountType"]:checked');
             const hint = document.getElementById('accountTypeHint');
             if (selected && hint && accountHints[selected.value]) hint.textContent = accountHints[selected.value];
+            const googleBtn = document.getElementById('googleRegisterBtn');
+            if (googleBtn && selected) googleBtn.href = `/api/auth/google?as=${selected.value}`;
         };
         if (asParam && accountHints[asParam]) {
             const radio = document.querySelector(`input[name="accountType"][value="${asParam}"]`);

@@ -70,7 +70,7 @@ const UserModel = {
         await prisma.user.update({ where: { userId: Number(userId) }, data });
     },
 
-    async findOrCreateOAuthUser({ provider, providerAccountId, email, name, avatarUrl }) {
+    async findOrCreateOAuthUser({ provider, providerAccountId, email, name, avatarUrl, accountType }) {
         const existingAccount = await prisma.oAuthAccount.findUnique({
             where: { provider_providerAccountId: { provider, providerAccountId } },
             include: { user: true }
@@ -90,7 +90,8 @@ const UserModel = {
                     email: normalizedEmail,
                     passwordHash: null,
                     avatarUrl: avatarUrl || null,
-                    emailVerified: true
+                    emailVerified: true,
+                    accountType: accountType || 'roommate'
                 }
             });
 
