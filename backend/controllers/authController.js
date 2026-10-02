@@ -10,6 +10,17 @@ async function isOwnerAnywhere(userId) {
     return groups.some(group => group.role === 'owner');
 }
 
+// Where the account belongs after login, from verified data — never from
+// what the user selected on the form. Staff-only accounts open today's
+// tasks; owners and roommates open the (role-adaptive) dashboard.
+async function homeFor(user) {
+    if (!user) return '/pages/dashboard.html';
+    if (normalizeAccountType(user.account_type) === 'staff') return '/pages/tasks.html';
+    const groups = await GroupModel.getUserGroups(user.user_id);
+    if (groups.length > 0 && groups.every(group => group.role === 'staff')) return '/pages/tasks.html';
+    return '/pages/dashboard.html';
+}
+
 // MFA is mandatory for PG/flat owners: by signup intent or by holding an
 // owner role in any group.
 async function mfaRequiredFor(user) {
@@ -121,7 +132,8 @@ const authController = {
                 data: {
                     user_id: user.user_id,
                     name: user.name,
-                    email: user.email
+                    email: user.email,
+                    home: await homeFor(user)
                 }
             });
         } catch (error) {
@@ -202,7 +214,8 @@ const authController = {
                 return res.status(401).json({ success: false, message: 'INVALID_MFA_CODE' });
             }
             req.session.mfaPending = null;
-            res.json({ success: true, message: 'Verified' });
+            const challengedUser = await UserModel.findById(req.session.userId);
+            res.json({ success: true, message: 'Verified', data: { home: await homeFor(challengedUser) } });
         } catch (error) {
             console.error('MFA challenge error:', error);
             res.status(500).json({ success: false, message: 'Server error' });

@@ -5,15 +5,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle Login Form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
+        // Role-first login: the selector sets expectations, the server checks
+        // the real account and decides the landing. Preselect via ?as=owner.
+        const loginRoleHints = {
+            roommate: 'Roommates land on the shared dashboard.',
+            owner: 'Owners verify a second step, then open their PG home.',
+            staff: 'Staff land directly on today\u2019s tasks.'
+        };
+        const applyLoginRoleHint = () => {
+            const selected = document.querySelector('input[name="loginRole"]:checked');
+            const hint = document.getElementById('loginRoleHint');
+            if (selected && hint && loginRoleHints[selected.value]) hint.textContent = loginRoleHints[selected.value];
+        };
+        const loginAsParam = new URLSearchParams(window.location.search).get('as');
+        if (loginAsParam && loginRoleHints[loginAsParam]) {
+            const radio = document.querySelector(`input[name="loginRole"][value="${loginAsParam}"]`);
+            if (radio) radio.checked = true;
+        }
+        document.querySelectorAll('input[name="loginRole"]').forEach(radio => {
+            radio.addEventListener('change', applyLoginRoleHint);
+        });
+        applyLoginRoleHint();
+
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const loginRole = (document.querySelector('input[name="loginRole"]:checked') || {}).value || 'roommate';
 
             try {
                 const response = await apiFetch('/api/auth/login', {
                     method: 'POST',
-                    body: { email, password }
+                    body: { email, password, as: loginRole }
                 });
 
                 if (response.success) {
@@ -41,7 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (parsed.origin !== window.location.origin) returnTo = null;
                         } catch { returnTo = null; }
                     }
-                    window.location.href = returnTo || '/pages/dashboard.html';
+                    // The server picks the home from the verified account:
+                    // staff land on today's tasks, everyone else on the dashboard.
+                    window.location.href = returnTo || (response.data && response.data.home) || '/pages/dashboard.html';
                 }
             } catch (error) {
                 // apiFetch already shows error message
@@ -125,7 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.success) {
-                    window.location.href = '/pages/dashboard.html';
+                    const home = (response.data && response.data.home) || '/pages/dashboard.html';
+                    window.location.href = home;
                 }
             } catch (error) {
                 // apiFetch already shows error message

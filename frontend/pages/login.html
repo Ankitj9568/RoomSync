@@ -40,6 +40,18 @@
             </h2>
             <form id="loginForm">
                 <div class="mb-3 text-start">
+                    <label class="form-label">I am signing in as</label>
+                    <div class="btn-group w-100" role="group" aria-label="Login role">
+                        <input type="radio" class="btn-check" name="loginRole" id="loginRoommate" value="roommate" checked>
+                        <label class="btn btn-outline-primary" for="loginRoommate"><i class="bi bi-people me-1"></i>Roommate</label>
+                        <input type="radio" class="btn-check" name="loginRole" id="loginOwner" value="owner">
+                        <label class="btn btn-outline-primary" for="loginOwner"><i class="bi bi-building me-1"></i>Owner</label>
+                        <input type="radio" class="btn-check" name="loginRole" id="loginStaff" value="staff">
+                        <label class="btn btn-outline-primary" for="loginStaff"><i class="bi bi-tools me-1"></i>Staff</label>
+                    </div>
+                    <div class="form-text" id="loginRoleHint">Roommates land on the shared dashboard.</div>
+                </div>
+                <div class="mb-3 text-start">
                     <label for="email" class="form-label">Email address</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
