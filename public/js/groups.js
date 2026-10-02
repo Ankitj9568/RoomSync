@@ -119,19 +119,33 @@ function renderMembers(members) {
     }
 
     const currentUserId = getUserId();
+    const me = members.find(member => String(member.user_id) === String(currentUserId));
+    // Managers (admins and owners) can change other members' roles.
+    // The backend re-validates every change; this only controls the UI.
+    const iAmManager = me && ['admin', 'owner'].includes(me.role);
+    const badgeFor = role => ({
+        admin: 'primary',
+        owner: 'warning',
+        staff: 'info',
+        member: 'secondary'
+    }[role] || 'secondary');
+    const labelFor = role => role.charAt(0).toUpperCase() + role.slice(1);
     let html = '';
 
     members.forEach(member => {
-        let badgeColor = member.role === 'admin' ? 'primary' : 'secondary';
         let youTag = member.user_id == currentUserId ? ' <span class="badge bg-light text-dark ms-1">You</span>' : '';
-        
+        const roleControl = (iAmManager && member.user_id != currentUserId)
+            ? `<select class="form-select form-select-sm d-inline-block w-auto" onchange="changeMemberRole(${member.user_id}, this.value)" aria-label="Change role">
+                ${['member', 'staff', 'admin', 'owner'].map(r => `<option value="${r}"${r === member.role ? ' selected' : ''}>${labelFor(r)}</option>`).join('')}
+               </select>`
+            : `<span class="badge bg-${badgeFor(member.role)}">${esc(labelFor(member.role))}</span>`;
         html += `
             <tr>
                 <td class="ps-4">
                     <div class="fw-medium">${esc(member.name)}${youTag}</div>
                     <div class="small text-muted">${esc(member.email)}</div>
                 </td>
-                <td><span class="badge bg-${badgeColor}">${esc(member.role)}</span></td>
+                <td>${roleControl}</td>
                 <td class="text-end pe-4">
                     ${member.user_id != currentUserId ? `<button class="btn btn-sm btn-outline-danger" onclick="removeMember(${member.user_id})"><i class="bi bi-person-x"></i></button>` : ''}
                 </td>
@@ -164,6 +178,22 @@ function renderLogs(logs) {
     html += '</ul>';
 
     container.innerHTML = html;
+}
+
+async function changeMemberRole(userId, role) {
+    const groupId = getActiveGroupId();
+    if (!groupId) return;
+
+    try {
+        await apiFetch(`/api/groups/${groupId}/members/${userId}`, {
+            method: 'PATCH',
+            body: { role }
+        });
+        loadGroupData();
+    } catch (error) {
+        alert(error.message || 'Failed to update role. The group must keep at least one manager.');
+        loadGroupData();
+    }
 }
 
 async function removeMember(userId) {

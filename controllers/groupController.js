@@ -2,6 +2,7 @@ const GroupModel = require('../models/groupModel');
 const UserModel = require('../models/userModel');
 const ActivityLogModel = require('../models/activityLogModel');
 const { isValidTime } = require('../utils/validation');
+const { isValidRole, normalizeRole, canManage, hasRemainingManager } = require('../utils/roles');
 const crypto = require('crypto');
 
 function generateGroupCode() {
@@ -131,7 +132,7 @@ const groupController = {
             const { id } = req.params;
             const membership = await GroupModel.isMember(id, req.session.userId);
             if (!membership) return res.status(404).json({ success: false, message: 'GROUP_NOT_FOUND' });
-            if (membership.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             res.json({ success: true, data: await GroupModel.getPendingJoinRequests(id) });
         } catch (error) {
             console.error('Get join requests error:', error);
@@ -143,7 +144,7 @@ const groupController = {
         try {
             const { id, reqId } = req.params;
             const membership = await GroupModel.isMember(id, req.session.userId);
-            if (!membership || membership.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!membership || !canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             const status = String(req.body.status || '').toLowerCase();
             if (!['approved', 'rejected'].includes(status)) {
                 return res.status(400).json({ success: false, message: 'Status must be approved or rejected' });
@@ -184,7 +185,7 @@ const groupController = {
             const { id } = req.params;
             const membership = await GroupModel.isMember(id, req.session.userId);
             if (!membership) return res.status(404).json({ success: false, message: 'GROUP_NOT_FOUND' });
-            if (membership.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
 
             const current = await GroupModel.getSettings(id) || { meal_cutoff_time: '10:00:00', allow_direct_join: 1 };
             const cutoff = req.body.meal_cutoff_time === undefined
@@ -218,11 +219,11 @@ const groupController = {
         try {
             const { group_id, email } = req.body;
             const membership = await GroupModel.isMember(group_id, req.session.userId);
-            if (!membership || membership.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!membership || !canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             const user = await UserModel.findByEmail(email);
             if (!user) return res.status(404).json({ success: false, message: 'User not found. They must register first.' });
             if (await GroupModel.isMember(group_id, user.user_id)) return res.status(409).json({ success: false, message: 'ALREADY_A_MEMBER' });
-            const role = req.body.role === 'admin' ? 'admin' : 'member';
+            const role = isValidRole(req.body.role) ? normalizeRole(req.body.role) : 'member';
             await GroupModel.addMember(group_id, user.user_id, role);
             await ActivityLogModel.create(group_id, req.session.userId, 'ADD_MEMBER', `Added ${user.name} to the group`);
             res.json({ success: true, message: 'Member added successfully' });
@@ -237,19 +238,42 @@ const groupController = {
             const groupId = req.params.id || req.body.group_id;
             const targetUserId = req.params.userId || req.body.user_id;
             const membership = await GroupModel.isMember(groupId, req.session.userId);
-            if (!membership || membership.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!membership || !canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             const target = await GroupModel.isMember(groupId, targetUserId);
             if (!target) return res.status(404).json({ success: false, message: 'MEMBER_NOT_FOUND' });
             if (Number(targetUserId) === Number(req.session.userId)) return res.status(400).json({ success: false, message: 'Cannot remove yourself' });
-            if (target.role === 'admin') {
+            if (canManage(target.role)) {
                 const members = await GroupModel.getGroupMembers(groupId);
-                if (members.filter(member => member.role === 'admin').length <= 1) return res.status(409).json({ success: false, message: 'Cannot remove the only admin' });
+                if (!hasRemainingManager(members, targetUserId)) return res.status(409).json({ success: false, message: 'Cannot remove the only manager' });
             }
             await GroupModel.removeMember(groupId, targetUserId);
             await ActivityLogModel.create(groupId, req.session.userId, 'REMOVE_MEMBER', 'Removed a member from the group');
             res.json({ success: true, message: 'Member removed successfully' });
         } catch (error) {
             console.error('Remove member error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
+    async updateMemberRole(req, res) {
+        try {
+            const groupId = req.params.id;
+            const targetUserId = req.params.userId;
+            const membership = await GroupModel.isMember(groupId, req.session.userId);
+            if (!membership || !canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            const role = normalizeRole(req.body.role);
+            if (!isValidRole(role)) return res.status(400).json({ success: false, message: 'INVALID_ROLE' });
+            const target = await GroupModel.isMember(groupId, targetUserId);
+            if (!target) return res.status(404).json({ success: false, message: 'MEMBER_NOT_FOUND' });
+            if (canManage(target.role) && !canManage(role)) {
+                const members = await GroupModel.getGroupMembers(groupId);
+                if (!hasRemainingManager(members, targetUserId)) return res.status(409).json({ success: false, message: 'Cannot demote the only manager' });
+            }
+            await GroupModel.updateMemberRole(groupId, targetUserId, role);
+            await ActivityLogModel.create(groupId, req.session.userId, 'UPDATE_MEMBER_ROLE', `Changed a member role to ${role}`);
+            res.json({ success: true, message: 'Member role updated' });
+        } catch (error) {
+            console.error('Update member role error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
     },
@@ -273,7 +297,7 @@ const groupController = {
             const groupId = req.params.id;
             const membership = await GroupModel.isMember(groupId, req.session.userId);
             if (!membership) return res.status(404).json({ success: false, message: 'GROUP_NOT_FOUND' });
-            if (membership.role !== 'admin') return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
             const members = await GroupModel.getGroupMembers(groupId);
             if (members.length !== 1) return res.status(409).json({ success: false, message: 'GROUP_NOT_EMPTY' });
             await GroupModel.deleteGroup(groupId);

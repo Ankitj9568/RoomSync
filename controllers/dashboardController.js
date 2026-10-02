@@ -5,6 +5,7 @@ const MealModel = require('../models/mealModel');
 const MenuModel = require('../models/menuModel');
 const settlementCalculator = require('../utils/settlementCalculator');
 const { todayInTimeZone } = require('../utils/validation');
+const { canAccessFinancials } = require('../utils/roles');
 
 const dashboardController = {
     async getOverview(req, res) {
@@ -19,6 +20,9 @@ const dashboardController = {
             const isMember = await GroupModel.isMember(group_id, userId);
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+            if (!canAccessFinancials(isMember.role)) {
+                return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
 
             // 1. Total Group Spend (Expenses + Groceries) for the current month
@@ -91,6 +95,9 @@ const dashboardController = {
             const isMember = await GroupModel.isMember(group_id, userId);
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+            if (!canAccessFinancials(isMember.role)) {
+                return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
 
             const expenses = await ExpenseModel.getExpensesByGroup(group_id);

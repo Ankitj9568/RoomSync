@@ -15,6 +15,7 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
 // Middleware
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(require('./middleware/securityHeaders'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/favicon.ico', (req, res) => {
     res.type('image/svg+xml').sendFile(path.join(__dirname, 'public', 'favicon.svg'));

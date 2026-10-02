@@ -56,6 +56,7 @@ router.get('/logs', groupController.getLogs);
 
 // Resource routes must remain below the fixed paths above.
 router.get('/:id/members', groupController.getMembers);
+router.patch('/:id/members/:userId', groupController.updateMemberRole);
 router.delete('/:id/members/:userId', groupController.removeMember);
 router.post('/:id/leave', groupController.leaveGroup);
 router.delete('/:id', groupController.deleteGroup);

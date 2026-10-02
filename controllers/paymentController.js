@@ -2,6 +2,7 @@ const PaymentModel = require('../models/paymentModel');
 const GroupModel = require('../models/groupModel');
 const settlementCalculator = require('../utils/settlementCalculator');
 const { isValidDate, isFutureDate, toCents } = require('../utils/validation');
+const { canAccessFinancials } = require('../utils/roles');
 
 const paymentController = {
     async getSettlements(req, res) {
@@ -16,6 +17,9 @@ const paymentController = {
             const isMember = await GroupModel.isMember(group_id, userId);
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+            if (!canAccessFinancials(isMember.role)) {
+                return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
 
             const settlementData = await settlementCalculator.calculateBalances(group_id);
@@ -66,6 +70,9 @@ const paymentController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
+            if (!canAccessFinancials(isMember.role)) {
+                return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
+            }
 
             const payments = await PaymentModel.getPaymentsByGroup(group_id);
             res.json({ success: true, data: payments });
@@ -101,6 +108,9 @@ const paymentController = {
             const isMember = await GroupModel.isMember(group_id, paidBy);
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+            if (!canAccessFinancials(isMember.role)) {
+                return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
             if (!await GroupModel.isMember(group_id, paidTo)) {
                 return res.status(400).json({ success: false, message: 'MEMBER_NOT_FOUND' });

@@ -107,13 +107,14 @@ async function loadGroupSettings() {
             
             res.data.members.forEach(m => {
                 const isMe = m.user_id === currentUserId;
-                const isAdmin = m.role === 'admin';
-                if (isMe && isAdmin) currentUserIsAdmin = true;
+                const roleLabel = m.role.charAt(0).toUpperCase() + m.role.slice(1);
+                const roleBadge = { admin: 'primary', owner: 'warning', staff: 'info', member: 'secondary' }[m.role] || 'secondary';
+                if (isMe && ['admin', 'owner'].includes(m.role)) currentUserIsAdmin = true;
                 
                 html += `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         ${esc(m.name)} ${isMe ? '(You)' : ''}
-                        ${isAdmin ? '<span class="badge bg-primary rounded-pill">Admin</span>' : ''}
+                        <span class="badge bg-${roleBadge} rounded-pill">${roleLabel}</span>
                     </li>
                 `;
             });

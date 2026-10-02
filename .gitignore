@@ -6,3 +6,5 @@
 *.db
 *.sqlite
 .archify/
+test-results/
+playwright-report/

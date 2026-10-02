@@ -101,7 +101,10 @@ function enhanceDynamicUI() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', enhanceDynamicUI);
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', enhanceDynamicUI);
+    document.addEventListener('groupChanged', invalidateReadCache);
+}
 
 /**
  * Standard fetch wrapper for all API calls
@@ -158,6 +161,10 @@ async function apiFetch(endpoint, options = {}, silent = false) {
             throw new Error(errorMsg);
         }
 
+        // Any successful mutation can change cached reads (profile, groups).
+        const method = String((options.method || 'GET')).toUpperCase();
+        if (method !== 'GET') invalidateReadCache();
+
         return data;
 
     } catch (error) {
@@ -173,7 +180,6 @@ async function apiFetch(endpoint, options = {}, silent = false) {
 function getActiveGroupId() {
     return localStorage.getItem('activeGroupId');
 }
-
 function setActiveGroupId(id) {
     localStorage.setItem('activeGroupId', id);
 }
@@ -200,4 +206,40 @@ function esc(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+// Short-lived in-memory cache for idempotent reads (profile, group list).
+// Entries expire after their TTL; any successful mutation or group switch
+// clears the whole cache so the UI never serves stale membership data.
+const readCache = new Map();
+
+function cachedGet(endpoint, ttlMs = 60000) {
+    const hit = readCache.get(endpoint);
+    if (hit && hit.expires > Date.now()) return Promise.resolve(hit.data);
+    return apiFetch(endpoint, {}, true).then(data => {
+        readCache.set(endpoint, { expires: Date.now() + ttlMs, data });
+        return data;
+    });
+}
+
+function invalidateReadCache() {
+    readCache.clear();
+}
+
+// Trailing-edge debounce: rapid group-switch selections collapse into one
+// reload instead of firing a request storm at the serverless backend.
+function debounce(fn, waitMs = 250) {
+    let timer = null;
+    return (...args) => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+            timer = null;
+            fn(...args);
+        }, waitMs);
+    };
+}
+
+// Exposed for Jest without affecting browser script usage.
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { esc, apiFetch, cachedGet, invalidateReadCache, debounce, __readCache: readCache };
 }

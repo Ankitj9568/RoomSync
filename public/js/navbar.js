@@ -21,7 +21,7 @@ const navbarHTML = `
     <button class="btn btn-link text-dark text-decoration-none p-1 me-2" id="themeToggleMobile" onclick="toggleTheme()">
       <i class="bi bi-moon-fill" id="themeIconMobile"></i>
     </button>
-    <button class="btn btn-outline-secondary border-0 p-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+    <button class="btn btn-outline-secondary border-0 p-1" type="button" aria-label="Open navigation menu" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
       <i class="bi bi-list fs-1 text-dark"></i>
     </button>
   </div>
@@ -67,13 +67,13 @@ const navbarHTML = `
         <a class="nav-link" href="/pages/meals.html"><i class="bi bi-cup-hot me-3"></i> Meals</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="/pages/expenses.html"><i class="bi bi-receipt me-3"></i> Expenses</a>
+        <a class="nav-link" data-financial-link href="/pages/expenses.html"><i class="bi bi-receipt me-3"></i> Expenses</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="/pages/settlements.html"><i class="bi bi-arrow-left-right me-3"></i> Settlements</a>
+        <a class="nav-link" data-financial-link href="/pages/settlements.html"><i class="bi bi-arrow-left-right me-3"></i> Settlements</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="/pages/analytics.html"><i class="bi bi-graph-up me-3"></i> Analytics</a>
+        <a class="nav-link" data-financial-link href="/pages/analytics.html"><i class="bi bi-graph-up me-3"></i> Analytics</a>
       </li>
     </ul>
     
@@ -198,18 +198,21 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const groupSelect = document.getElementById('navGroupSelect');
         if (groupSelect) {
-            groupSelect.addEventListener('change', (e) => {
-                setActiveGroupId(e.target.value);
+            // Debounced so rapid selection changes collapse into a single reload.
+            const onGroupSwitch = debounce(value => {
+                setActiveGroupId(value);
+                applyRoleToNav(getActiveGroupRole());
                 // Dispatch event so page can reload its data
                 window.dispatchEvent(new Event('groupChanged'));
             });
+            groupSelect.addEventListener('change', e => onGroupSwitch(e.target.value));
         }
     }
 });
 
 async function loadUserProfile() {
     try {
-        const res = await apiFetch('/api/users/me', {}, true); // silent load
+        const res = await cachedGet('/api/users/me'); // silent cached load
         if (res.success && res.data) {
             const user = res.data;
             // Keep legacy page scripts in sync for OAuth sessions, which do
@@ -227,7 +230,7 @@ async function loadUserProfile() {
 
 async function loadUserGroups(userProfilePromise = Promise.resolve()) {
     try {
-        const res = await apiFetch('/api/groups', {}, true);
+        const res = await cachedGet('/api/groups');
         const groupSelect = document.getElementById('navGroupSelect');
         
         if (res.success && res.data) {
@@ -261,9 +264,32 @@ async function loadUserGroups(userProfilePromise = Promise.resolve()) {
             // Keep page modules from rendering before the profile has populated
             // localStorage with the current user id.
             await userProfilePromise;
+            applyRoleToNav(getActiveGroupRole());
             window.dispatchEvent(new Event('groupReady'));
         }
     } catch (error) {
         console.error("Failed to load groups", error);
     }
+}
+
+// Role of the current user in the active group, from the cached group list.
+function getActiveGroupRole() {
+    try {
+        const cache = typeof readCache !== 'undefined' ? readCache : null;
+        const hit = cache ? cache.get('/api/groups') : null;
+        const groups = hit && hit.data && hit.data.data ? hit.data.data : [];
+        const active = groups.find(g => String(g.id) === String(getActiveGroupId()));
+        return active ? active.role : null;
+    } catch {
+        return null;
+    }
+}
+
+// Staff (chef, maid) never see financial navigation; the backend enforces
+// the same restriction on every financial endpoint.
+function applyRoleToNav(role) {
+    const hideFinancials = role === 'staff';
+    document.querySelectorAll('[data-financial-link]').forEach(link => {
+        link.classList.toggle('d-none', hideFinancials);
+    });
 }

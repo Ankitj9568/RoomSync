@@ -22,11 +22,14 @@ RoomSync is a lightweight web application that helps people living together mana
 - **Visual Analytics**: Monthly spending dashboards powered by Chart.js.
 - **Group Administration**: 
   - Multi-group support allowing users to be part of multiple households.
-  - Role-based permissions (Admin vs Member).
+  - Role-based permissions (Owner, Admin, Member, Staff). Owners manage like
+    admins; staff (chef, maid, caretaker) use meals, groceries, and shopping
+    lists but are excluded from financials.
   - Invite links and scannable QR codes for easy onboarding.
   - Configurable joining workflows (Direct Join vs Admin Approval for pending requests).
 - **Modern & Responsive UI**: Sleek landing page with animated horizontal sliders, glassmorphism design, and a fully mobile-optimized interface.
 - **Robust Testing**: Comprehensive testing suite built with Jest & Supertest to ensure the integrity of expense logic and settlement algorithms.
+- **Mobile E2E Smoke Test**: Playwright verifies registration-to-dashboard on a mobile viewport (`npm run test:e2e` with the server running).
 
 ---
 

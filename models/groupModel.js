@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma');
 const { number, timestamp } = require('../utils/prismaFormat');
+const { canManage } = require('../utils/roles');
 
 function groupRow(group) {
     return group && {
@@ -105,7 +106,7 @@ const GroupModel = {
             }
 
             let transferredTo = null;
-            if (member.role === 'admin' && members.filter(item => item.role === 'admin').length === 1) {
+            if (canManage(member.role) && !members.some(item => item.userId !== Number(userId) && canManage(item.role))) {
                 const replacement = members.find(item => item.userId !== Number(userId));
                 await tx.groupMember.update({
                     where: { groupId_userId: { groupId: Number(groupId), userId: replacement.userId } },

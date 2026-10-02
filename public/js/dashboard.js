@@ -26,27 +26,37 @@ function requestDashboardData(force = false) {
 async function loadDashboardData(groupId) {
 
     try {
-        const [groupRes, dashRes, activityRes] = await Promise.all([
+        // Settled (not all-or-nothing) so staff members still see the group
+        // header and activity feed even though financials are restricted.
+        const [groupRes, dashRes, activityRes] = await Promise.allSettled([
             apiFetch(`/api/groups/${groupId}`),
-            apiFetch(`/api/dashboard?group_id=${groupId}`),
+            // Silent: a staff restriction renders as an inline notice below.
+            apiFetch(`/api/dashboard?group_id=${groupId}`, {}, true),
             apiFetch(`/api/groups/${groupId}/activities`)
         ]);
 
-        if (groupRes.success && groupRes.data) {
-            document.getElementById('groupNameHeader').textContent = groupRes.data.name + ' Dashboard';
+        if (groupRes.status === 'fulfilled' && groupRes.value.success && groupRes.value.data) {
+            document.getElementById('groupNameHeader').textContent = groupRes.value.data.name + ' Dashboard';
         }
 
-        if (dashRes.success && dashRes.data) {
-            renderDashboardOverview(dashRes.data);
+        if (dashRes.status === 'fulfilled' && dashRes.value.success && dashRes.value.data) {
+            renderDashboardOverview(dashRes.value.data);
+        } else if (dashRes.status === 'rejected' && String(dashRes.reason && dashRes.reason.message).includes('FINANCIALS_RESTRICTED')) {
+            renderStaffNotice();
         }
 
-        if (activityRes.success && activityRes.data) {
-            renderActivities(activityRes.data);
+        if (activityRes.status === 'fulfilled' && activityRes.value.success && activityRes.value.data) {
+            renderActivities(activityRes.value.data);
         }
-        
+
     } catch (error) {
         console.error("Dashboard data load failed", error);
     }
+}
+
+function renderStaffNotice() {
+    const balanceTextEl = document.getElementById('dashBalanceText');
+    if (balanceTextEl) balanceTextEl.textContent = 'Staff accounts show household tasks, not financials. Use Meals and Shopping List from the menu.';
 }
 
 function renderDashboardOverview(data) {

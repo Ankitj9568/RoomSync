@@ -5,6 +5,16 @@
 > `prisma/migrations/`. The SQL examples below are legacy MySQL reference
 > material retained for migration compatibility; do not use them to initialize
 > new environments.
+>
+> ### Membership roles
+>
+> `group_members.role` is one of `admin`, `owner`, `member`, or `staff`
+> (enforced by a database `CHECK` constraint, see
+> `prisma/migrations/0002_membership_roles/`). Owners manage the group exactly
+> like admins. Staff accounts (chef, maid, caretaker) can use meals, menus,
+> groceries, and the shopping list, but are excluded from expenses, payments,
+> settlements, adjustments, and spending analytics, and are never included in
+> expense splits.
 
 ## ER Diagram (Textual)
 
