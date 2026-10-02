@@ -331,7 +331,9 @@ hr {
 /* Navbar / Sidebar */
 .sidebar {
     background-color: var(--bg-surface);
-    z-index: 1040;
+    /* Bootstrap's offcanvas backdrop is z-index 1040. Keep the drawer above
+       it so mobile navigation links receive touch and click events. */
+    z-index: 1045;
     border-right: 1px solid var(--border-color);
     overflow: hidden;
     overscroll-behavior: contain;
