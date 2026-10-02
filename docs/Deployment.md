@@ -1,32 +1,32 @@
 # Deploying RoomSync
 
-This document outlines how to deploy RoomSync to production using Vercel (for the backend/frontend) and Railway (for the database).
+This document outlines how to deploy RoomSync to production using Vercel (for the backend/frontend) and Supabase PostgreSQL (for the database).
 
 ## Architecture
 
 *   **Frontend/Backend:** Vercel (Serverless Node.js Express)
-*   **Database:** Railway MySQL (or any cloud MySQL provider)
+*   **Database:** Supabase PostgreSQL through Prisma
 *   **Authentication:** Signed, httpOnly cookie sessions compatible with serverless invocations
 
-**Important:** SQLite will *not* work for a production Vercel deployment. Vercel functions are ephemeral, meaning the local `roomsync.db` file will be lost frequently. You must use a remote MySQL database.
+**Important:** RoomSync uses PostgreSQL through Prisma in both local development and production. Vercel uses the remote Supabase database.
 
-## 1. Set up MySQL Database (Railway)
+## 1. Set up PostgreSQL Database (Supabase)
 
-1.  Go to [Railway.app](https://railway.app/).
-2.  Click **New Project** > **Provision MySQL**.
-3.  Click on the newly created MySQL service and go to the **Connect** tab.
-4.  Copy the **MySQL Connection URL** (it should look like `mysql://root:password@host:port/railway`).
+1. Go to [Supabase](https://supabase.com/) and create a project.
+2. Open **Project Settings → Database**.
+3. Copy the pooled connection string for `DATABASE_URL`.
+4. Copy the direct connection string for `DIRECT_URL`.
 
-## 2. Initialize the Database Schema
+## 2. Initialize the Database Schema with Prisma
 
-The application can initialize missing MySQL tables on its first database connection. You may also initialize the schema manually before deploying:
+Prisma owns the PostgreSQL schema through checked-in migrations:
 
-1.  Open your preferred MySQL client (like DBeaver, TablePlus, or the Railway web UI query tool).
-2.  Connect using the Railway credentials.
-3.  Copy the contents of `database/schema_mysql.sql` and execute it in your MySQL client to create the necessary tables. This is optional when automatic schema initialization is permitted.
-4.  Do not run `database/seed.sql` against MySQL; it uses SQLite date functions and is intended for local development only. Production should normally start with an empty database.
+1. Install dependencies with `npm install`.
+2. Set `DATABASE_URL` and `DIRECT_URL` in your local environment.
+3. Run `npx prisma migrate deploy`.
+4. For the existing MySQL deployment, also set `MYSQL_DATABASE_URL` and run `npm run db:migrate:mysql-to-postgres`.
 
-**Note:** Ensure you use `database/schema_mysql.sql` for deployment, as `database/schema.sql` uses SQLite-specific syntax (like `AUTOINCREMENT`) which will fail on MySQL.
+**Note:** Do not execute the legacy `database/schema_mysql.sql` for the new deployment. Use the Prisma migration in `prisma/migrations/`.
 
 ## 3. Configure Vercel
 
@@ -34,8 +34,13 @@ The application can initialize missing MySQL tables on its first database connec
 2.  Log in to [Vercel](https://vercel.com/) and click **Add New Project**.
 3.  Import the GitHub repository `Ankitj9568/RoomSync` (or your fork).
 4.  In the **Environment Variables** section, add the following:
-    *   `DATABASE_URL`: The MySQL connection URL you copied from Railway.
-    *   `SESSION_SECRET`: A long random string used for signing cookies.
+     *   `DATABASE_URL`: The Supabase pooled PostgreSQL connection URL.
+     *   `DIRECT_URL`: The Supabase direct PostgreSQL connection URL.
+     *   `SESSION_SECRET`: A long random string used for signing cookies.
+     *   `NODE_ENV`: `production`.
+     *   `GOOGLE_CLIENT_ID`: Google OAuth client ID.
+     *   `GOOGLE_CLIENT_SECRET`: Google OAuth client secret.
+     *   `GOOGLE_CALLBACK_URL`: `https://your-domain.vercel.app/api/auth/google/callback`.
     *   `NODE_ENV`: `production`
 
 ## 4. `vercel.json` Configuration
@@ -68,6 +73,22 @@ The repository already contains `vercel.json`; it sends API and page requests to
 
 1.  Click **Deploy** on Vercel.
 2.  Once deployed, Vercel will provide a URL (e.g., `roomsync.vercel.app`).
-3.  Because you set `DATABASE_URL`, `config/db.js` connects to MySQL instead of trying to create a local SQLite file.
+3.  Because you set `DATABASE_URL`, Prisma connects to PostgreSQL.
 
 You are now ready to use RoomSync!
+
+## 6. Configure Google OAuth
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. Create or select a project and configure the OAuth consent screen.
+3. Create an **OAuth client ID** for a web application.
+4. Add this authorized redirect URI:
+
+```text
+https://your-domain.vercel.app/api/auth/google/callback
+```
+
+5. Add the generated client ID and secret to Vercel as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+6. Set `GOOGLE_CALLBACK_URL` to the same redirect URI and redeploy.
+
+RoomSync keeps its existing signed cookie session after Google authenticates. OAuth accounts are linked by provider account ID and verified email.

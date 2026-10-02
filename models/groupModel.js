@@ -1,79 +1,98 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
+const { number, timestamp } = require('../utils/prismaFormat');
+
+function groupRow(group) {
+    return group && {
+        group_id: group.groupId,
+        group_name: group.groupName,
+        group_code: group.groupCode,
+        created_by: group.createdById,
+        created_at: timestamp(group.createdAt)
+    };
+}
 
 const GroupModel = {
     async createGroup(groupName, groupCode, userId) {
-        return db.transaction(async tx => {
-            const groupResult = await tx.run(
-                'INSERT INTO `groups` (group_name, group_code, created_by) VALUES (?, ?, ?)',
-                [groupName, groupCode, userId]
-            );
-            const groupId = groupResult.lastID;
-
-            await tx.run(
-                'INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)',
-                [groupId, userId, 'admin']
-            );
-
-            await tx.run(
-                'INSERT INTO group_settings (group_id) VALUES (?)',
-                [groupId]
-            );
-
-            return groupId;
+        return prisma.$transaction(async tx => {
+            const group = await tx.group.create({
+                data: {
+                    groupName,
+                    groupCode,
+                    createdById: Number(userId),
+                    members: { create: { userId: Number(userId), role: 'admin' } },
+                    settings: { create: {} }
+                }
+            });
+            return group.groupId;
         });
     },
 
     async getUserGroups(userId) {
-        const rows = await db.all(`
-            SELECT g.group_id, g.group_name, g.group_code, gm.role,
-            (SELECT COUNT(*) FROM group_members WHERE group_id = g.group_id) as member_count
-            FROM \`groups\` g
-            JOIN group_members gm ON g.group_id = gm.group_id
-            WHERE gm.user_id = ?
-        `, [userId]);
-        return rows;
+        const memberships = await prisma.groupMember.findMany({
+            where: { userId: Number(userId) },
+            include: { group: { include: { _count: { select: { members: true } } } } }
+        });
+        return memberships.map(membership => ({
+            group_id: membership.group.groupId,
+            group_name: membership.group.groupName,
+            group_code: membership.group.groupCode,
+            role: membership.role,
+            member_count: membership.group._count.members
+        }));
     },
 
     async getGroupById(groupId) {
-        const rows = await db.all(`
-            SELECT group_id, group_name, group_code, created_by
-            FROM \`groups\` WHERE group_id = ?
-        `, [groupId]);
-        return rows[0];
+        return groupRow(await prisma.group.findUnique({ where: { groupId: Number(groupId) } }));
     },
 
     async getGroupByCode(groupCode) {
-        const rows = await db.all('SELECT group_id, group_name, group_code FROM `groups` WHERE UPPER(group_code) = UPPER(?)', [groupCode]);
-        return rows[0];
+        const group = await prisma.group.findFirst({
+            where: { groupCode: { equals: groupCode, mode: 'insensitive' } }
+        });
+        return group && { group_id: group.groupId, group_name: group.groupName, group_code: group.groupCode };
     },
 
     async getGroupMembers(groupId) {
-        const rows = await db.all(`
-            SELECT u.user_id, u.name, u.email, u.phone, u.upi_id, gm.role, gm.joined_at
-            FROM group_members gm
-            JOIN users u ON gm.user_id = u.user_id
-            WHERE gm.group_id = ?
-        `, [groupId]);
-        return rows;
+        const members = await prisma.groupMember.findMany({
+            where: { groupId: Number(groupId) },
+            include: { user: true },
+            orderBy: { joinedAt: 'asc' }
+        });
+        return members.map(member => ({
+            user_id: member.user.userId,
+            name: member.user.name,
+            email: member.user.email,
+            phone: member.user.phone,
+            upi_id: member.user.upiId,
+            role: member.role,
+            joined_at: timestamp(member.joinedAt)
+        }));
     },
 
     async isMember(groupId, userId) {
-        const rows = await db.all('SELECT role FROM group_members WHERE group_id = ? AND user_id = ?', [groupId, userId]);
-        return rows[0];
+        const member = await prisma.groupMember.findUnique({
+            where: { groupId_userId: { groupId: Number(groupId), userId: Number(userId) } }
+        });
+        return member ? { role: member.role } : undefined;
     },
 
     async addMember(groupId, userId, role = 'member') {
-        await db.run('INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)', [groupId, userId, role]);
+        await prisma.groupMember.create({ data: { groupId: Number(groupId), userId: Number(userId), role } });
     },
 
     async removeMember(groupId, userId) {
-        await db.run('DELETE FROM group_members WHERE group_id = ? AND user_id = ?', [groupId, userId]);
+        await prisma.groupMember.delete({
+            where: { groupId_userId: { groupId: Number(groupId), userId: Number(userId) } }
+        });
     },
 
     async leaveGroup(groupId, userId) {
-        return db.transaction(async tx => {
-            const members = await tx.all('SELECT user_id, role FROM group_members WHERE group_id = ? ORDER BY joined_at ASC, group_member_id ASC', [groupId]);
-            const member = members.find(item => Number(item.user_id) === Number(userId));
+        return prisma.$transaction(async tx => {
+            const members = await tx.groupMember.findMany({
+                where: { groupId: Number(groupId) },
+                orderBy: [{ joinedAt: 'asc' }, { groupMemberId: 'asc' }]
+            });
+            const member = members.find(item => item.userId === Number(userId));
             if (!member) {
                 const error = new Error('NOT_A_MEMBER');
                 error.code = 'NOT_A_MEMBER';
@@ -87,87 +106,103 @@ const GroupModel = {
 
             let transferredTo = null;
             if (member.role === 'admin' && members.filter(item => item.role === 'admin').length === 1) {
-                const replacement = members.find(item => Number(item.user_id) !== Number(userId));
-                await tx.run('UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?', ['admin', groupId, replacement.user_id]);
-                transferredTo = replacement.user_id;
+                const replacement = members.find(item => item.userId !== Number(userId));
+                await tx.groupMember.update({
+                    where: { groupId_userId: { groupId: Number(groupId), userId: replacement.userId } },
+                    data: { role: 'admin' }
+                });
+                transferredTo = replacement.userId;
             }
-            await tx.run('DELETE FROM group_members WHERE group_id = ? AND user_id = ?', [groupId, userId]);
+            await tx.groupMember.delete({
+                where: { groupId_userId: { groupId: Number(groupId), userId: Number(userId) } }
+            });
             return { transferredTo };
         });
     },
 
     async updateMemberRole(groupId, userId, role) {
-        await db.run('UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?', [role, groupId, userId]);
+        await prisma.groupMember.update({
+            where: { groupId_userId: { groupId: Number(groupId), userId: Number(userId) } },
+            data: { role }
+        });
     },
 
     async getOldestMember(groupId, excludeUserId = null) {
-        const params = [groupId];
-        let query = 'SELECT user_id FROM group_members WHERE group_id = ?';
-        if (excludeUserId !== null) {
-            query += ' AND user_id <> ?';
-            params.push(excludeUserId);
-        }
-        query += ' ORDER BY joined_at ASC, group_member_id ASC LIMIT 1';
-        const rows = await db.all(query, params);
-        return rows[0];
+        const member = await prisma.groupMember.findFirst({
+            where: { groupId: Number(groupId), ...(excludeUserId === null ? {} : { userId: { not: Number(excludeUserId) } }) },
+            orderBy: [{ joinedAt: 'asc' }, { groupMemberId: 'asc' }]
+        });
+        return member && { user_id: member.userId };
     },
 
     async deleteGroup(groupId) {
-        await db.run('DELETE FROM `groups` WHERE group_id = ?', [groupId]);
+        await prisma.group.delete({ where: { groupId: Number(groupId) } });
     },
 
     async getSettings(groupId) {
-        const rows = await db.all('SELECT meal_cutoff_time, allow_direct_join FROM group_settings WHERE group_id = ?', [groupId]);
-        return rows[0];
+        const settings = await prisma.groupSettings.findUnique({ where: { groupId: Number(groupId) } });
+        return settings && {
+            group_id: settings.groupId,
+            meal_cutoff_time: settings.mealCutoffTime,
+            allow_direct_join: settings.allowDirectJoin
+        };
     },
 
     async updateSettings(groupId, mealCutoffTime, allowDirectJoin) {
-        const existing = await db.get('SELECT group_id FROM group_settings WHERE group_id = ?', [groupId]);
-        if (existing) {
-            await db.run('UPDATE group_settings SET meal_cutoff_time = ?, allow_direct_join = ? WHERE group_id = ?',
-                [mealCutoffTime, allowDirectJoin, groupId]);
-        } else {
-            await db.run('INSERT INTO group_settings (group_id, meal_cutoff_time, allow_direct_join) VALUES (?, ?, ?)',
-                [groupId, mealCutoffTime, allowDirectJoin]);
-        }
+        await prisma.groupSettings.upsert({
+            where: { groupId: Number(groupId) },
+            create: { groupId: Number(groupId), mealCutoffTime, allowDirectJoin: Boolean(allowDirectJoin) },
+            update: { mealCutoffTime, allowDirectJoin: Boolean(allowDirectJoin) }
+        });
     },
-    
+
     async createJoinRequest(groupId, userId) {
-        const result = await db.run(
-            'INSERT INTO join_requests (group_id, user_id, status) VALUES (?, ?, ?)',
-            [groupId, userId, 'pending']
-        );
-        return result.lastID;
+        const request = await prisma.joinRequest.create({ data: { groupId: Number(groupId), userId: Number(userId), status: 'pending' } });
+        return request.requestId;
     },
-    
+
     async getPendingJoinRequests(groupId) {
-        return await db.all(`
-            SELECT jr.request_id, jr.group_id, jr.user_id, jr.status, jr.created_at, u.name as user_name, u.email as user_email
-            FROM join_requests jr
-            JOIN users u ON jr.user_id = u.user_id
-            WHERE jr.group_id = ? AND jr.status = 'pending'
-            ORDER BY jr.created_at DESC
-        `, [groupId]);
+        const requests = await prisma.joinRequest.findMany({
+            where: { groupId: Number(groupId), status: 'pending' },
+            include: { user: true },
+            orderBy: { createdAt: 'desc' }
+        });
+        return requests.map(request => ({
+            request_id: request.requestId,
+            group_id: request.groupId,
+            user_id: request.userId,
+            status: request.status,
+            created_at: timestamp(request.createdAt),
+            user_name: request.user.name,
+            user_email: request.user.email
+        }));
     },
-    
+
     async getJoinRequestById(requestId) {
-        const rows = await db.all('SELECT * FROM join_requests WHERE request_id = ?', [requestId]);
-        return rows[0];
+        const request = await prisma.joinRequest.findUnique({ where: { requestId: Number(requestId) } });
+        return request && {
+            request_id: request.requestId,
+            group_id: request.groupId,
+            user_id: request.userId,
+            status: request.status,
+            created_at: timestamp(request.createdAt)
+        };
     },
-    
+
     async updateJoinRequestStatus(requestId, status) {
-        await db.run('UPDATE join_requests SET status = ? WHERE request_id = ?', [status, requestId]);
+        await prisma.joinRequest.update({ where: { requestId: Number(requestId) }, data: { status } });
     },
 
     async assignNewAdmin(groupId) {
-        const rows = await db.all('SELECT user_id FROM group_members WHERE group_id = ? ORDER BY joined_at ASC LIMIT 1', [groupId]);
-        if (rows.length > 0) {
-            await db.run('UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?', ['admin', groupId, rows[0].user_id]);
-        }
+        const member = await prisma.groupMember.findFirst({ where: { groupId: Number(groupId) }, orderBy: { joinedAt: 'asc' } });
+        if (member) await this.updateMemberRole(groupId, member.userId, 'admin');
     },
 
     async updateBudget(groupId, userId, budget) {
-        await db.run('UPDATE group_members SET monthly_budget = ? WHERE group_id = ? AND user_id = ?', [budget, groupId, userId]);
+        await prisma.groupMember.update({
+            where: { groupId_userId: { groupId: Number(groupId), userId: Number(userId) } },
+            data: { monthlyBudget: budget }
+        });
     }
 };
 

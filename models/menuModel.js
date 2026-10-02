@@ -1,32 +1,25 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
+const { dateOnly } = require('../utils/prismaFormat');
+
+function menuRow(menu) {
+    return menu && { menu_id: menu.menuId, group_id: menu.groupId, menu_date: dateOnly(menu.menuDate), meal_type: menu.mealType, veg_item: menu.vegItem, nonveg_item: menu.nonvegItem };
+}
 
 const MenuModel = {
     async getMenuByGroupAndDate(groupId, date) {
-        const rows = await db.all(`
-            SELECT * FROM daily_menus 
-            WHERE group_id = ? AND menu_date = ?
-            ORDER BY CASE WHEN meal_type = 'lunch' THEN 1 ELSE 2 END
-        `, [groupId, date]);
-        return rows;
+        const menus = await prisma.dailyMenu.findMany({
+            where: { groupId: Number(groupId), menuDate: new Date(`${date}T00:00:00.000Z`) },
+            orderBy: { mealType: 'asc' }
+        });
+        return menus.sort((a, b) => (a.mealType === 'lunch' ? 0 : 1) - (b.mealType === 'lunch' ? 0 : 1)).map(menuRow);
     },
 
     async upsertMenu(groupId, date, mealType, vegItem, nonvegItem) {
-        // NOTE: ON CONFLICT...DO UPDATE SET is SQLite-only. Use portable pattern.
-        const existing = await db.get(
-            'SELECT menu_id FROM daily_menus WHERE group_id = ? AND menu_date = ? AND meal_type = ?',
-            [groupId, date, mealType]
-        );
-        if (existing) {
-            await db.run(
-                'UPDATE daily_menus SET veg_item = ?, nonveg_item = ? WHERE menu_id = ?',
-                [vegItem, nonvegItem, existing.menu_id]
-            );
-        } else {
-            await db.run(
-                'INSERT INTO daily_menus (group_id, menu_date, meal_type, veg_item, nonveg_item) VALUES (?, ?, ?, ?, ?)',
-                [groupId, date, mealType, vegItem, nonvegItem]
-            );
-        }
+        await prisma.dailyMenu.upsert({
+            where: { groupId_menuDate_mealType: { groupId: Number(groupId), menuDate: new Date(`${date}T00:00:00.000Z`), mealType } },
+            create: { groupId: Number(groupId), menuDate: new Date(`${date}T00:00:00.000Z`), mealType, vegItem, nonvegItem: nonvegItem || null },
+            update: { vegItem, nonvegItem: nonvegItem || null }
+        });
     }
 };
 

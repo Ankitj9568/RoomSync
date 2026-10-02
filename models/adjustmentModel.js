@@ -1,37 +1,39 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
+const { number, timestamp } = require('../utils/prismaFormat');
 
 const AdjustmentModel = {
     async getAdjustmentsByGroup(groupId) {
-        const rows = await db.all(`
-            SELECT a.adjustment_id, a.amount, a.reason, a.created_at,
-                   a.from_user, u1.name as from_user_name,
-                   a.to_user, u2.name as to_user_name,
-                   a.created_by, u3.name as created_by_name
-            FROM adjustments a
-            JOIN users u1 ON a.from_user = u1.user_id
-            JOIN users u2 ON a.to_user = u2.user_id
-            JOIN users u3 ON a.created_by = u3.user_id
-            WHERE a.group_id = ?
-            ORDER BY a.created_at DESC
-        `, [groupId]);
-        return rows;
+        const adjustments = await prisma.adjustment.findMany({
+            where: { groupId: Number(groupId) },
+            include: { fromUser: true, toUser: true, createdBy: true },
+            orderBy: { createdAt: 'desc' }
+        });
+        return adjustments.map(adjustment => ({
+            adjustment_id: adjustment.adjustmentId,
+            amount: number(adjustment.amount),
+            reason: adjustment.reason,
+            created_at: timestamp(adjustment.createdAt),
+            from_user: adjustment.fromUserId,
+            from_user_name: adjustment.fromUser.name,
+            to_user: adjustment.toUserId,
+            to_user_name: adjustment.toUser.name,
+            created_by: adjustment.createdById,
+            created_by_name: adjustment.createdBy.name
+        }));
     },
 
     async getAdjustmentById(adjustmentId) {
-        const rows = await db.all('SELECT * FROM adjustments WHERE adjustment_id = ?', [adjustmentId]);
-        return rows[0];
+        const adjustment = await prisma.adjustment.findUnique({ where: { adjustmentId: Number(adjustmentId) } });
+        return adjustment && { ...adjustment, adjustment_id: adjustment.adjustmentId, group_id: adjustment.groupId, from_user: adjustment.fromUserId, to_user: adjustment.toUserId, created_by: adjustment.createdById, amount: number(adjustment.amount) };
     },
 
     async addAdjustment(groupId, fromUser, toUser, amount, reason, createdBy) {
-        const result = await db.run(
-            'INSERT INTO adjustments (group_id, from_user, to_user, amount, reason, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-            [groupId, fromUser, toUser, amount, reason, createdBy]
-        );
-        return result.lastID;
+        const adjustment = await prisma.adjustment.create({ data: { groupId: Number(groupId), fromUserId: Number(fromUser), toUserId: Number(toUser), amount, reason, createdById: Number(createdBy) } });
+        return adjustment.adjustmentId;
     },
 
     async deleteAdjustment(adjustmentId) {
-        await db.run('DELETE FROM adjustments WHERE adjustment_id = ?', [adjustmentId]);
+        await prisma.adjustment.delete({ where: { adjustmentId: Number(adjustmentId) } });
     }
 };
 

@@ -1,39 +1,42 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
+const { timestamp } = require('../utils/prismaFormat');
+
+function itemRow(item) {
+    return item && {
+        item_id: item.itemId,
+        group_id: item.groupId,
+        item_name: item.itemName,
+        assigned_to: item.assignedToId,
+        status: item.status,
+        created_at: timestamp(item.createdAt)
+    };
+}
 
 const ShoppingListModel = {
     async getListByGroup(groupId) {
-        const rows = await db.all(`
-            SELECT s.item_id, s.item_name, s.assigned_to, s.status, u.name as assigned_name
-            FROM shopping_list s
-            LEFT JOIN users u ON s.assigned_to = u.user_id
-            WHERE s.group_id = ?
-            ORDER BY s.created_at DESC
-        `, [groupId]);
-        return rows;
+        const items = await prisma.shoppingList.findMany({
+            where: { groupId: Number(groupId) },
+            include: { assignedTo: true },
+            orderBy: { createdAt: 'desc' }
+        });
+        return items.map(item => ({ ...itemRow(item), assigned_name: item.assignedTo ? item.assignedTo.name : null }));
     },
 
     async getItemById(itemId) {
-        const rows = await db.all('SELECT * FROM shopping_list WHERE item_id = ?', [itemId]);
-        return rows[0];
+        return itemRow(await prisma.shoppingList.findUnique({ where: { itemId: Number(itemId) } }));
     },
 
     async addItem(groupId, itemName, assignedTo) {
-        const result = await db.run(
-            'INSERT INTO shopping_list (group_id, item_name, assigned_to) VALUES (?, ?, ?)',
-            [groupId, itemName, assignedTo || null]
-        );
-        return result.lastID;
+        const item = await prisma.shoppingList.create({ data: { groupId: Number(groupId), itemName, assignedToId: assignedTo ? Number(assignedTo) : null } });
+        return item.itemId;
     },
 
     async updateItem(itemId, itemName, assignedTo, status) {
-        await db.run(
-            'UPDATE shopping_list SET item_name = ?, assigned_to = ?, status = ? WHERE item_id = ?',
-            [itemName, assignedTo || null, status, itemId]
-        );
+        await prisma.shoppingList.update({ where: { itemId: Number(itemId) }, data: { itemName, assignedToId: assignedTo ? Number(assignedTo) : null, status } });
     },
 
     async deleteItem(itemId) {
-        await db.run('DELETE FROM shopping_list WHERE item_id = ?', [itemId]);
+        await prisma.shoppingList.delete({ where: { itemId: Number(itemId) } });
     }
 };
 

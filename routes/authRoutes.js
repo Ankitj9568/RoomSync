@@ -1,7 +1,9 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { passport, configureGoogleOAuth } = require('../middleware/googleOAuth');
 
 // --- Rate Limiter (brute-force protection for login/register) ---
 // Simple in-memory rate limiter: max 15 attempts per IP per 15 minutes.
@@ -38,5 +40,20 @@ function authRateLimit(req, res, next) {
 router.post('/register', authRateLimit, authController.register);
 router.post('/login', authRateLimit, authController.login);
 router.post('/logout', authMiddleware, authController.logout);
+
+router.get('/google', (req, res, next) => {
+    if (!configureGoogleOAuth()) return res.status(503).json({ success: false, message: 'GOOGLE_OAUTH_NOT_CONFIGURED' });
+    const state = crypto.randomBytes(24).toString('hex');
+    req.session.oauthState = state;
+    passport.authenticate('google', { session: false, scope: ['profile', 'email'], state })(req, res, next);
+});
+router.get('/google/callback', (req, res, next) => {
+    if (!configureGoogleOAuth()) return res.redirect('/pages/login.html?oauth=not-configured');
+    if (!req.session || !req.query.state || req.session.oauthState !== req.query.state) {
+        return res.redirect('/pages/login.html?oauth=invalid-state');
+    }
+    req.session.oauthState = null;
+    passport.authenticate('google', { session: false, failureRedirect: '/pages/login.html?oauth=failed' })(req, res, next);
+}, authController.oauthCallback);
 
 module.exports = router;

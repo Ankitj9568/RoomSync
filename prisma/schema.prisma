@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  userId                Int                  @id @default(autoincrement()) @map("user_id")
+  name                  String
+  email                 String               @unique
+  passwordHash          String?              @map("password_hash")
+  upiId                 String?              @map("upi_id")
+  phone                 String?
+  avatarUrl             String?              @map("avatar_url")
+  emailVerified         Boolean              @default(false) @map("email_verified")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  createdGroups         Group[]              @relation("GroupCreator")
+  memberships           GroupMember[]
+  purchasedGroceries    Grocery[]            @relation("GroceryPurchaser")
+  groceryContributions  GroceryContributor[]
+  assignedShoppingItems ShoppingList[]       @relation("ShoppingAssignee")
+  meals                 Meal[]
+  expensePayers         ExpensePayer[]
+  expenseMembers        ExpenseMember[]
+  paymentsSent          Payment[]            @relation("PaymentSender")
+  paymentsReceived      Payment[]            @relation("PaymentReceiver")
+  adjustmentsFrom       Adjustment[]         @relation("AdjustmentFrom")
+  adjustmentsTo         Adjustment[]         @relation("AdjustmentTo")
+  createdAdjustments    Adjustment[]         @relation("AdjustmentCreator")
+  joinRequests          JoinRequest[]
+  activityLogs          ActivityLog[]
+  oauthAccounts         OAuthAccount[]
+
+  @@map("users")
+}
+
+model Group {
+  groupId       Int            @id @default(autoincrement()) @map("group_id")
+  groupName     String         @map("group_name")
+  groupCode     String         @unique @map("group_code")
+  createdById   Int            @map("created_by")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  createdBy     User           @relation("GroupCreator", fields: [createdById], references: [userId], onDelete: Restrict)
+  members       GroupMember[]
+  groceries     Grocery[]
+  shoppingItems ShoppingList[]
+  meals         Meal[]
+  menus         DailyMenu[]
+  expenses      Expense[]
+  payments      Payment[]
+  adjustments   Adjustment[]
+  settings      GroupSettings?
+  joinRequests  JoinRequest[]
+  activityLogs  ActivityLog[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  groupMemberId Int      @id @default(autoincrement()) @map("group_member_id")
+  groupId       Int      @map("group_id")
+  userId        Int      @map("user_id")
+  role          String   @default("member")
+  monthlyBudget Decimal  @default(0) @map("monthly_budget") @db.Decimal(10, 2)
+  joinedAt      DateTime @default(now()) @map("joined_at")
+  group         Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+model Grocery {
+  groceryId     Int                  @id @default(autoincrement()) @map("grocery_id")
+  groupId       Int                  @map("group_id")
+  itemName      String               @map("item_name")
+  quantity      String?
+  amount        Decimal              @db.Decimal(10, 2)
+  purchasedById Int                  @map("purchased_by")
+  purchaseDate  DateTime             @map("purchase_date") @db.Date
+  createdAt     DateTime             @default(now()) @map("created_at")
+  group         Group                @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  purchasedBy   User                 @relation("GroceryPurchaser", fields: [purchasedById], references: [userId], onDelete: Restrict)
+  contributors  GroceryContributor[]
+
+  @@index([groupId])
+  @@map("groceries")
+}
+
+model GroceryContributor {
+  contributorId Int     @id @default(autoincrement()) @map("contributor_id")
+  groceryId     Int     @map("grocery_id")
+  userId        Int     @map("user_id")
+  amountPaid    Decimal @map("amount_paid") @db.Decimal(10, 2)
+  grocery       Grocery @relation(fields: [groceryId], references: [groceryId], onDelete: Cascade)
+  user          User    @relation(fields: [userId], references: [userId], onDelete: Restrict)
+
+  @@index([groceryId])
+  @@map("grocery_contributors")
+}
+
+model ShoppingList {
+  itemId       Int      @id @default(autoincrement()) @map("item_id")
+  groupId      Int      @map("group_id")
+  itemName     String   @map("item_name")
+  assignedToId Int?     @map("assigned_to")
+  status       String   @default("pending")
+  createdAt    DateTime @default(now()) @map("created_at")
+  group        Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  assignedTo   User?    @relation("ShoppingAssignee", fields: [assignedToId], references: [userId], onDelete: SetNull)
+
+  @@index([status])
+  @@map("shopping_list")
+}
+
+model Meal {
+  mealId         Int      @id @default(autoincrement()) @map("meal_id")
+  groupId        Int      @map("group_id")
+  userId         Int      @map("user_id")
+  mealDate       DateTime @map("meal_date") @db.Date
+  mealType       String   @map("meal_type")
+  isAttending    Boolean  @default(true) @map("is_attending")
+  dietPreference String   @default("veg") @map("diet_preference")
+  guestCount     Int      @default(0) @map("guest_count")
+  group          Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([groupId, userId, mealDate, mealType])
+  @@index([mealDate])
+  @@map("meals")
+}
+
+model DailyMenu {
+  menuId     Int      @id @default(autoincrement()) @map("menu_id")
+  groupId    Int      @map("group_id")
+  menuDate   DateTime @map("menu_date") @db.Date
+  mealType   String   @map("meal_type")
+  vegItem    String   @map("veg_item")
+  nonvegItem String?  @map("nonveg_item")
+  group      Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+
+  @@unique([groupId, menuDate, mealType])
+  @@map("daily_menus")
+}
+
+model Expense {
+  expenseId   Int             @id @default(autoincrement()) @map("expense_id")
+  groupId     Int             @map("group_id")
+  title       String
+  description String?
+  amount      Decimal         @db.Decimal(10, 2)
+  category    String          @default("other")
+  expenseType String          @default("ad_hoc") @map("expense_type")
+  splitType   String          @default("equal") @map("split_type")
+  expenseDate DateTime        @map("expense_date") @db.Date
+  createdAt   DateTime        @default(now()) @map("created_at")
+  group       Group           @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  payers      ExpensePayer[]
+  members     ExpenseMember[]
+
+  @@index([groupId])
+  @@map("expenses")
+}
+
+model ExpensePayer {
+  expensePayerId Int     @id @default(autoincrement()) @map("expense_payer_id")
+  expenseId      Int     @map("expense_id")
+  userId         Int     @map("user_id")
+  amountPaid     Decimal @map("amount_paid") @db.Decimal(10, 2)
+  expense        Expense @relation(fields: [expenseId], references: [expenseId], onDelete: Cascade)
+  user           User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
+  @@map("expense_payers")
+}
+
+model ExpenseMember {
+  expenseMemberId Int     @id @default(autoincrement()) @map("expense_member_id")
+  expenseId       Int     @map("expense_id")
+  userId          Int     @map("user_id")
+  shareAmount     Decimal @map("share_amount") @db.Decimal(10, 2)
+  expense         Expense @relation(fields: [expenseId], references: [expenseId], onDelete: Cascade)
+  user            User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
+  @@index([expenseId])
+  @@map("expense_members")
+}
+
+model Payment {
+  paymentId   Int      @id @default(autoincrement()) @map("payment_id")
+  groupId     Int      @map("group_id")
+  paidById    Int      @map("paid_by")
+  paidToId    Int      @map("paid_to")
+  amount      Decimal  @db.Decimal(10, 2)
+  paymentMode String   @map("payment_mode")
+  note        String?
+  paymentDate DateTime @map("payment_date") @db.Date
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at")
+  group       Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  paidBy      User     @relation("PaymentSender", fields: [paidById], references: [userId], onDelete: Restrict)
+  paidTo      User     @relation("PaymentReceiver", fields: [paidToId], references: [userId], onDelete: Restrict)
+
+  @@index([groupId])
+  @@map("payments")
+}
+
+model Adjustment {
+  adjustmentId Int      @id @default(autoincrement()) @map("adjustment_id")
+  groupId      Int      @map("group_id")
+  fromUserId   Int      @map("from_user")
+  toUserId     Int      @map("to_user")
+  amount       Decimal  @db.Decimal(10, 2)
+  reason       String
+  createdById  Int      @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  group        Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  fromUser     User     @relation("AdjustmentFrom", fields: [fromUserId], references: [userId], onDelete: Cascade)
+  toUser       User     @relation("AdjustmentTo", fields: [toUserId], references: [userId], onDelete: Cascade)
+  createdBy    User     @relation("AdjustmentCreator", fields: [createdById], references: [userId], onDelete: Restrict)
+
+  @@map("adjustments")
+}
+
+model GroupSettings {
+  groupId         Int     @id @map("group_id")
+  mealCutoffTime  String  @default("10:00:00") @map("meal_cutoff_time")
+  allowDirectJoin Boolean @default(true) @map("allow_direct_join")
+  group           Group   @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+
+  @@map("group_settings")
+}
+
+model JoinRequest {
+  requestId Int      @id @default(autoincrement()) @map("request_id")
+  groupId   Int      @map("group_id")
+  userId    Int      @map("user_id")
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at")
+  group     Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([groupId, status])
+  @@map("join_requests")
+}
+
+model ActivityLog {
+  logId       Int      @id @default(autoincrement()) @map("log_id")
+  groupId     Int      @map("group_id")
+  userId      Int?     @map("user_id")
+  action      String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  group       Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [userId], onDelete: SetNull)
+
+  @@index([groupId, createdAt])
+  @@map("activity_logs")
+}
+
+model OAuthAccount {
+  oauthAccountId    Int      @id @default(autoincrement()) @map("oauth_account_id")
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  userId            Int      @map("user_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  user              User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}

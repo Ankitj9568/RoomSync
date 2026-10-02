@@ -1,95 +1,71 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
+const { number, dateOnly, timestamp } = require('../utils/prismaFormat');
+
+function expenseRow(expense) {
+    return expense && {
+        expense_id: expense.expenseId,
+        group_id: expense.groupId,
+        title: expense.title,
+        description: expense.description,
+        amount: number(expense.amount),
+        category: expense.category,
+        expense_type: expense.expenseType,
+        split_type: expense.splitType,
+        expense_date: dateOnly(expense.expenseDate),
+        created_at: timestamp(expense.createdAt)
+    };
+}
+
+function withChildren(expense) {
+    return {
+        ...expenseRow(expense),
+        splits: (expense.members || []).map(member => ({ user_id: member.userId, share_amount: number(member.shareAmount), name: member.user.name })),
+        payers: (expense.payers || []).map(payer => ({ user_id: payer.userId, amount_paid: number(payer.amountPaid), name: payer.user.name }))
+    };
+}
+
+const includeChildren = {
+    members: { include: { user: true } },
+    payers: { include: { user: true } }
+};
 
 const ExpenseModel = {
     async getExpensesByGroup(groupId) {
-        const rows = await db.all(`
-            SELECT e.expense_id, e.title, e.description, e.amount, e.category, e.expense_type, e.split_type, 
-                   e.expense_date
-            FROM expenses e
-            WHERE e.group_id = ?
-            ORDER BY e.expense_date DESC
-        `, [groupId]);
-
-        for (let expense of rows) {
-            const members = await db.all(`
-                SELECT em.user_id, em.share_amount, u.name 
-                FROM expense_members em
-                JOIN users u ON em.user_id = u.user_id
-                WHERE em.expense_id = ?
-            `, [expense.expense_id]);
-            expense.splits = members;
-
-            const payers = await db.all(`
-                SELECT ep.user_id, ep.amount_paid, u.name 
-                FROM expense_payers ep
-                JOIN users u ON ep.user_id = u.user_id
-                WHERE ep.expense_id = ?
-            `, [expense.expense_id]);
-            expense.payers = payers;
-        }
-
-        return rows;
+        const expenses = await prisma.expense.findMany({ where: { groupId: Number(groupId) }, include: includeChildren, orderBy: { expenseDate: 'desc' } });
+        return expenses.map(withChildren);
     },
 
     async getExpenseById(expenseId) {
-        const rows = await db.all('SELECT * FROM expenses WHERE expense_id = ?', [expenseId]);
-        return rows[0];
+        return expenseRow(await prisma.expense.findUnique({ where: { expenseId: Number(expenseId) } }));
     },
 
     async addExpense(groupId, title, description, amount, category, expenseType, splitType, expenseDate, splits, payers) {
-        return db.transaction(async tx => {
-            const result = await tx.run(
-                'INSERT INTO expenses (group_id, title, description, amount, category, expense_type, split_type, expense_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [groupId, title, description, amount, category, expenseType, splitType, expenseDate]
-            );
-            const expenseId = result.lastID;
-
-            for (const split of splits) {
-                await tx.run(
-                    'INSERT INTO expense_members (expense_id, user_id, share_amount) VALUES (?, ?, ?)',
-                    [expenseId, split.user_id, split.share_amount]
-                );
+        const expense = await prisma.$transaction(async tx => tx.expense.create({
+            data: {
+                groupId: Number(groupId), title, description: description || null, amount,
+                category, expenseType, splitType, expenseDate: new Date(`${expenseDate}T00:00:00.000Z`),
+                members: { create: splits.map(split => ({ userId: Number(split.user_id), shareAmount: split.share_amount })) },
+                payers: { create: payers.map(payer => ({ userId: Number(payer.user_id), amountPaid: payer.amount_paid })) }
             }
-
-            for (const payer of payers) {
-                await tx.run(
-                    'INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES (?, ?, ?)',
-                    [expenseId, payer.user_id, payer.amount_paid]
-                );
-            }
-
-            return expenseId;
-        });
+        }));
+        return expense.expenseId;
     },
 
     async updateExpense(expenseId, title, description, amount, category, expenseType, splitType, expenseDate, splits, payers) {
-        await db.transaction(async tx => {
-            await tx.run(
-                'UPDATE expenses SET title=?, description=?, amount=?, category=?, expense_type=?, split_type=?, expense_date=? WHERE expense_id=?',
-                [title, description, amount, category, expenseType, splitType, expenseDate, expenseId]
-            );
-
-            await tx.run('DELETE FROM expense_members WHERE expense_id = ?', [expenseId]);
-            await tx.run('DELETE FROM expense_payers WHERE expense_id = ?', [expenseId]);
-
-            for (const split of splits) {
-                await tx.run(
-                    'INSERT INTO expense_members (expense_id, user_id, share_amount) VALUES (?, ?, ?)',
-                    [expenseId, split.user_id, split.share_amount]
-                );
-            }
-
-            for (const payer of payers) {
-                await tx.run(
-                    'INSERT INTO expense_payers (expense_id, user_id, amount_paid) VALUES (?, ?, ?)',
-                    [expenseId, payer.user_id, payer.amount_paid]
-                );
-            }
+        await prisma.$transaction(async tx => {
+            await tx.expense.update({
+                where: { expenseId: Number(expenseId) },
+                data: { title, description: description || null, amount, category, expenseType, splitType, expenseDate: new Date(`${expenseDate}T00:00:00.000Z`) }
+            });
+            await tx.expenseMember.deleteMany({ where: { expenseId: Number(expenseId) } });
+            await tx.expensePayer.deleteMany({ where: { expenseId: Number(expenseId) } });
+            await tx.expenseMember.createMany({ data: splits.map(split => ({ expenseId: Number(expenseId), userId: Number(split.user_id), shareAmount: split.share_amount })) });
+            await tx.expensePayer.createMany({ data: payers.map(payer => ({ expenseId: Number(expenseId), userId: Number(payer.user_id), amountPaid: payer.amount_paid })) });
         });
     },
 
     async deleteExpense(expenseId) {
-        await db.run('DELETE FROM expenses WHERE expense_id = ?', [expenseId]);
+        await prisma.expense.delete({ where: { expenseId: Number(expenseId) } });
     }
 };
 

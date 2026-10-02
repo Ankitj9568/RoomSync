@@ -1,48 +1,39 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
+const { dateOnly } = require('../utils/prismaFormat');
+
+function mealRow(meal) {
+    return meal && {
+        meal_id: meal.mealId,
+        group_id: meal.groupId,
+        user_id: meal.userId,
+        meal_date: dateOnly(meal.mealDate),
+        meal_type: meal.mealType,
+        is_attending: meal.isAttending,
+        diet_preference: meal.dietPreference,
+        guest_count: meal.guestCount
+    };
+}
 
 const MealModel = {
     async getMealsByGroupAndDate(groupId, date) {
-        const rows = await db.all(`
-            SELECT m.meal_id, m.user_id, u.name, m.meal_type, m.is_attending, m.diet_preference, m.guest_count 
-            FROM meals m
-            JOIN users u ON m.user_id = u.user_id
-            WHERE m.group_id = ? AND m.meal_date = ?
-        `, [groupId, date]);
-        return rows;
+        const meals = await prisma.meal.findMany({ where: { groupId: Number(groupId), mealDate: new Date(`${date}T00:00:00.000Z`) }, include: { user: true } });
+        return meals.map(meal => ({ ...mealRow(meal), name: meal.user.name }));
     },
 
     async getUserMeal(groupId, userId, date, mealType) {
-        const rows = await db.all(`
-            SELECT * FROM meals 
-            WHERE group_id = ? AND user_id = ? AND meal_date = ? AND meal_type = ?
-        `, [groupId, userId, date, mealType]);
-        return rows[0];
+        return mealRow(await prisma.meal.findUnique({ where: { groupId_userId_mealDate_mealType: { groupId: Number(groupId), userId: Number(userId), mealDate: new Date(`${date}T00:00:00.000Z`), mealType } } }));
     },
 
     async getMealById(mealId) {
-        const rows = await db.all('SELECT * FROM meals WHERE meal_id = ?', [mealId]);
-        return rows[0];
+        return mealRow(await prisma.meal.findUnique({ where: { mealId: Number(mealId) } }));
     },
 
     async upsertMeal(groupId, userId, date, mealType, isAttending, dietPreference = 'veg', guestCount = 0) {
-        // NOTE: We use check-then-insert/update instead of ON CONFLICT...DO UPDATE SET
-        // because that syntax is SQLite-specific. MySQL requires ON DUPLICATE KEY UPDATE,
-        // and the db proxy doesn't support multi-dialect upserts natively.
-        const existing = await db.get(
-            'SELECT meal_id FROM meals WHERE group_id = ? AND user_id = ? AND meal_date = ? AND meal_type = ?',
-            [groupId, userId, date, mealType]
-        );
-        if (existing) {
-            await db.run(
-                'UPDATE meals SET is_attending = ?, diet_preference = ?, guest_count = ? WHERE meal_id = ?',
-                [isAttending, dietPreference, guestCount, existing.meal_id]
-            );
-        } else {
-            await db.run(
-                'INSERT INTO meals (group_id, user_id, meal_date, meal_type, is_attending, diet_preference, guest_count) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [groupId, userId, date, mealType, isAttending, dietPreference, guestCount]
-            );
-        }
+        await prisma.meal.upsert({
+            where: { groupId_userId_mealDate_mealType: { groupId: Number(groupId), userId: Number(userId), mealDate: new Date(`${date}T00:00:00.000Z`), mealType } },
+            create: { groupId: Number(groupId), userId: Number(userId), mealDate: new Date(`${date}T00:00:00.000Z`), mealType, isAttending: Boolean(isAttending), dietPreference, guestCount },
+            update: { isAttending: Boolean(isAttending), dietPreference, guestCount }
+        });
     }
 };
 

@@ -2,7 +2,7 @@
 
 ![RoomSync Landing Page](docs/assets/landing-page.webp)
 
-**Live Demo:** [https://roomsync-production-82ed.up.railway.app/](https://roomsync-production-82ed.up.railway.app/)
+**Live Demo:** [https://room-sync-kappa.vercel.app/](https://room-sync-kappa.vercel.app/)
 
 > **A shared living management platform for roommates, hostel students, PG residents, and shared apartments.**
 
@@ -36,10 +36,10 @@ RoomSync is a lightweight web application that helps people living together mana
 |--------|------------|
 | **Frontend** | HTML5, CSS3, Bootstrap 5, Vanilla JavaScript |
 | **Backend** | Node.js, Express.js |
-| **Database** | SQLite (Local Development) / MySQL (Production) |
-| **Authentication** | Express Session + bcrypt |
+| **Database** | PostgreSQL through Prisma |
+| **Authentication** | Signed cookie sessions, password login, and Google OAuth |
 | **Charts** | Chart.js |
-| **Deployment** | Vercel & Railway |
+| **Deployment** | Vercel & Supabase |
 
 ---
 
@@ -84,9 +84,10 @@ npm install
 
 ### 3. Run the Application Locally
 
-By default, RoomSync uses a local **SQLite** database for development. You do not need to configure any external database to run it locally. It will initialize and seed `database/roomsync.db` on the first run.
+RoomSync uses **PostgreSQL through Prisma** in development and production. Create a Supabase project (or local PostgreSQL database), copy `DATABASE_URL` and `DIRECT_URL` into `.env`, then initialize the schema:
 
 ```bash
+npx prisma migrate deploy
 npm start
 ```
 
@@ -94,16 +95,27 @@ Once the server starts, open `http://localhost:3000` in your browser.
 
 ---
 
-## Production Deployment (Vercel + MySQL)
+## Production Deployment (Vercel + Supabase PostgreSQL)
 
-For deploying to production environments, RoomSync automatically switches to MySQL when `DATABASE_URL` is provided. The application initializes missing tables and applies safe compatibility migrations on startup.
+For production, RoomSync uses PostgreSQL through Prisma. Prisma migrations create the schema; the application does not mutate the database schema during requests.
 
 1. Import [Ankitj9568/RoomSync](https://github.com/Ankitj9568/RoomSync) into Vercel.
-2. Set up a MySQL database (for example, using Railway or PlanetScale).
+2. Create a Supabase PostgreSQL project.
 3. Set the following environment variables in Vercel:
-   - `DATABASE_URL`: Your full MySQL connection string.
+   - `DATABASE_URL`: Supabase pooled PostgreSQL URL.
+   - `DIRECT_URL`: Supabase direct PostgreSQL URL for Prisma migrations.
    - `SESSION_SECRET`: A secure random string for signing cookies.
-4. Deploy the application. RoomSync includes a `vercel.json` file ready for GitHub-based Vercel deployment.
+   - `NODE_ENV`: `production`.
+   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Google login.
+   - `GOOGLE_CALLBACK_URL`: `https://your-domain.vercel.app/api/auth/google/callback`.
+4. Run `npx prisma migrate deploy` once against the production database, then deploy the application.
+5. Deploy the application. RoomSync includes a `vercel.json` file ready for GitHub-based Vercel deployment.
+
+To migrate the existing MySQL data, set `MYSQL_DATABASE_URL` locally and run:
+
+```bash
+npm run db:migrate:mysql-to-postgres
+```
 
 
 ---

@@ -1,4 +1,28 @@
 const request = require('supertest');
+// Auth contract tests use an in-memory repository so they do not require a
+// developer PostgreSQL instance. Prisma-backed database coverage belongs in
+// the deployment/integration suite with TEST_DATABASE_URL configured.
+jest.mock('../../models/userModel', () => {
+    const users = new Map();
+    let nextId = 1;
+    return {
+        findByEmail: async email => users.get(String(email).toLowerCase()),
+        create: async ({ name, email, password_hash }) => {
+            const user = { user_id: nextId++, name, email, password_hash, phone: null, upi_id: null };
+            users.set(email.toLowerCase(), user);
+            return user.user_id;
+        },
+        findById: async userId => [...users.values()].find(user => user.user_id === Number(userId)),
+        findByIdWithHash: async userId => [...users.values()].find(user => user.user_id === Number(userId)),
+        update: async () => {},
+        updatePassword: async (userId, passwordHash) => {
+            const user = [...users.values()].find(item => item.user_id === Number(userId));
+            if (user) user.password_hash = passwordHash;
+        },
+        findOrCreateOAuthUser: async () => null
+    };
+});
+
 const app = require('../../server'); 
 
 describe('Auth API (Black-box)', () => {

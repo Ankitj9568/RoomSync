@@ -1,45 +1,85 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
 const { normalizeEmail } = require('../utils/validation');
+
+function publicUser(user) {
+    if (!user) return user;
+    return {
+        user_id: user.userId,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        upi_id: user.upiId,
+        avatar_url: user.avatarUrl,
+        email_verified: user.emailVerified
+    };
+}
 
 const UserModel = {
     async findByEmail(email) {
-        const rows = await db.all('SELECT * FROM users WHERE email = ?', [normalizeEmail(email)]);
-        return rows[0];
+        const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+        return user ? { ...publicUser(user), password_hash: user.passwordHash } : undefined;
     },
 
     async findById(userId) {
-        const rows = await db.all('SELECT user_id, name, email, phone, upi_id FROM users WHERE user_id = ?', [userId]);
-        return rows[0];
+        return publicUser(await prisma.user.findUnique({ where: { userId: Number(userId) } }));
     },
 
     async create(userData) {
-        const { name, email, password_hash } = userData;
-        const result = await db.run(
-            'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
-            [name, email, password_hash]
-        );
-        return result.lastID;
+        const user = await prisma.user.create({
+            data: {
+                name: userData.name,
+                email: normalizeEmail(userData.email),
+                passwordHash: userData.password_hash || null,
+                emailVerified: Boolean(userData.email_verified)
+            }
+        });
+        return user.userId;
     },
 
     async update(userId, userData) {
-        const { name, phone, upi_id } = userData;
-        await db.run(
-            'UPDATE users SET name = ?, phone = ?, upi_id = ? WHERE user_id = ?',
-            [name, phone, upi_id, userId]
-        );
+        await prisma.user.update({
+            where: { userId: Number(userId) },
+            data: { name: userData.name, phone: userData.phone || null, upiId: userData.upi_id || null }
+        });
     },
 
     async findByIdWithHash(userId) {
-        // Like findById but includes password_hash — only for password change verification
-        const rows = await db.all('SELECT * FROM users WHERE user_id = ?', [userId]);
-        return rows[0];
+        const user = await prisma.user.findUnique({ where: { userId: Number(userId) } });
+        return user ? { ...publicUser(user), password_hash: user.passwordHash } : undefined;
     },
 
     async updatePassword(userId, newHash) {
-        await db.run(
-            'UPDATE users SET password_hash = ? WHERE user_id = ?',
-            [newHash, userId]
-        );
+        await prisma.user.update({ where: { userId: Number(userId) }, data: { passwordHash: newHash } });
+    },
+
+    async findOrCreateOAuthUser({ provider, providerAccountId, email, name, avatarUrl }) {
+        const existingAccount = await prisma.oAuthAccount.findUnique({
+            where: { provider_providerAccountId: { provider, providerAccountId } },
+            include: { user: true }
+        });
+        if (existingAccount) return existingAccount.user;
+
+        const normalizedEmail = normalizeEmail(email);
+        const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+        const user = existingUser
+            ? await prisma.user.update({
+                where: { userId: existingUser.userId },
+                data: { avatarUrl: avatarUrl || existingUser.avatarUrl, emailVerified: true }
+            })
+            : await prisma.user.create({
+                data: {
+                    name: name || normalizedEmail.split('@')[0],
+                    email: normalizedEmail,
+                    passwordHash: null,
+                    avatarUrl: avatarUrl || null,
+                    emailVerified: true
+                }
+            });
+
+        await prisma.oAuthAccount.create({
+            data: { provider, providerAccountId, userId: user.userId }
+        });
+        return user;
     }
 };
 

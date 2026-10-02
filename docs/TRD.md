@@ -1,5 +1,10 @@
 # 📄 TRD.md — Technical Requirements Document
 
+> **Current implementation note:** RoomSync now uses PostgreSQL through
+> Prisma and deploys on Vercel. Older MySQL/mysql2 references in this legacy
+> document describe the original design; see `prisma/schema.prisma` and
+> `docs/Deployment.md` for the current implementation.
+
 ## 1. Overall Architecture
 
 RoomSync follows a **3-tier monolithic MVC architecture** — simple, beginner-friendly, and appropriate for a college-scale full-stack project.

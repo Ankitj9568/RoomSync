@@ -65,7 +65,7 @@ const authController = {
             }
 
             const user = await UserModel.findByEmail(email);
-            if (!user) {
+            if (!user || !user.password_hash) {
                 return res.status(401).json({ success: false, message: 'INVALID_CREDENTIALS' });
             }
 
@@ -90,6 +90,13 @@ const authController = {
             console.error('Login error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
+    },
+
+    async oauthCallback(req, res) {
+        if (!req.user) return res.redirect('/pages/login.html?oauth=failed');
+        req.session.userId = req.user.userId;
+        req.session.userName = req.user.name;
+        res.redirect('/pages/dashboard.html');
     },
 
     async logout(req, res) {

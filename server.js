@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cookieSession = require('cookie-session');
+const { passport, configureGoogleOAuth } = require('./middleware/googleOAuth');
 require('dotenv').config();
 
 const app = express();
@@ -16,7 +17,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Trust reverse proxy (for Railway/Vercel) to allow secure cookies
+// Trust reverse proxy (for Vercel) to allow secure cookies
 app.set('trust proxy', 1);
 
 // Signed cookie sessions work across Vercel serverless invocations. The
@@ -28,10 +29,15 @@ app.use(cookieSession({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     cookie: {
         httpOnly: true,
-        sameSite: 'strict', // Strict provides stronger CSRF protection for API-driven apps
+        // Lax permits the top-level GET callback from Google OAuth while still
+        // blocking cookies on cross-site subrequests.
+        sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production'
     }
 }));
+
+configureGoogleOAuth();
+app.use(passport.initialize());
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
@@ -48,7 +54,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const authMiddleware = require('./middleware/authMiddleware');
 const paymentController = require('./controllers/paymentController');
 const dashboardController = require('./controllers/dashboardController');
-const db = require('./config/db');
+const prisma = require('./config/prisma');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -63,7 +69,7 @@ app.use('/api/adjustments', adjustmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.get('/api/health', async (req, res) => {
     try {
-        await db.get('SELECT 1 AS ok');
+        await prisma.$queryRaw`SELECT 1`;
         res.json({ success: true, status: 'ok' });
     } catch (error) {
         console.error('Health check failed:', error);

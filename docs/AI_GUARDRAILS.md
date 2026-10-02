@@ -12,7 +12,7 @@ These rules are **mandatory** and must never be violated when generating or modi
 5. Do NOT use TypeScript — this project is plain JavaScript (Node.js + browser JS) only.
 6. Do NOT use Tailwind CSS or any CSS framework other than **Bootstrap 5**.
 7. Use Bootstrap components (cards, modals, tables, navbar, badges, toasts) wherever a suitable one exists, instead of hand-rolled custom UI.
-8. Avoid unnecessary npm packages — only add a dependency if it solves a real, non-trivial problem (e.g., `bcrypt`, `mysql2`, `dotenv`, `express-session`). Do not add packages "for convenience" that duplicate built-in functionality.
+8. Avoid unnecessary npm packages — only add a dependency if it solves a real, non-trivial problem (e.g., `bcrypt`, `prisma`, `dotenv`, `cookie-session`, or an OAuth provider). Do not add packages "for convenience" that duplicate built-in functionality.
 
 ## Code Organization Rules
 9. Controllers should handle request parsing, validation orchestration, and response formatting.
@@ -20,15 +20,15 @@ These rules are **mandatory** and must never be violated when generating or modi
 Business logic should reside in dedicated service modules where complexity justifies separation.
 
 Models should contain database access only.
-10. Keep **all SQL queries inside the model/database layer** (`models/`) — never write raw SQL inside routes or controllers.
+10. Keep **all database queries inside the model/database layer** (`models/`) — use Prisma models and transactions; never write database access inside routes or controllers.
 11. Keep routes thin — a route file should only map HTTP verbs/paths to controller functions, with no logic of its own.
 12. Use modular JavaScript on the frontend — one file per page/feature (`groceries.js`, `expenses.js`, etc.), each with clearly scoped functions. No giant single `app.js` file.
 13. Avoid duplicate code — extract shared logic (e.g., fetch wrapper, date formatting, currency formatting) into shared utility files (`public/js/api.js`, `utils/`).
 
 ## Database Rules
-14. Keep the SQL schema normalized to at least 3NF, as defined in DATABASE.md. Do not add redundant columns that duplicate data already available via a foreign key relationship.
-15. Always use **parameterized queries** (`?` placeholders via `mysql2`) — never build SQL via string concatenation or template literals with unsanitized input.
-16. Any new table must have an explicit primary key, appropriate foreign keys, and `NOT NULL`/`CHECK` constraints consistent with the patterns already in `database/schema.sql`.
+14. Keep the Prisma schema normalized to at least 3NF, as defined in DATABASE.md. Do not add redundant columns that duplicate data already available via a foreign key relationship.
+15. Use Prisma's typed query API and `$transaction`; never build SQL with unsanitized input. Raw SQL is permitted only for reviewed migration operations.
+16. Any new Prisma model must have an explicit primary key, appropriate relations, and database constraints consistent with `prisma/schema.prisma` and its migrations.
 
 ## API Rules
 17. Follow RESTful conventions strictly:

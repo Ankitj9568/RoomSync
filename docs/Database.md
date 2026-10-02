@@ -1,5 +1,11 @@
 # 📄 DATABASE.md — Database Design Document
 
+> **Current implementation:** PostgreSQL managed through Prisma. The canonical
+> schema is `prisma/schema.prisma`, and deployable migrations are under
+> `prisma/migrations/`. The SQL examples below are legacy MySQL reference
+> material retained for migration compatibility; do not use them to initialize
+> new environments.
+
 ## ER Diagram (Textual)
 
 ```
@@ -30,7 +36,7 @@ The following conventions are used throughout the RoomSync database schema:
 - Foreign keys reuse the referenced primary key names.
 - Monetary values use `DECIMAL(10,2)`.
 - Timestamp columns use `created_at`.
-- Enumerated values are implemented using `ENUM`.
+- Enumerated values are represented as validated strings in Prisma models.
 - Nullable columns are used only where the business rules permit optional values.
 
 ## Tables

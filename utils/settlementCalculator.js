@@ -16,8 +16,8 @@ const settlementCalculator = {
         // Initialize balances for each user: user_id -> balance
         // Positive balance = they are owed money
         // Negative balance = they owe money
-        // NOTE: We use String(id) as keys to avoid Number vs String key mismatch
-        // when MySQL returns IDs as numbers vs SQLite returning integers.
+        // Use string keys so database driver numeric representations cannot
+        // change the balance map lookup behavior.
         const balances = {};
         members.forEach(m => {
             balances[String(m.user_id)] = 0;

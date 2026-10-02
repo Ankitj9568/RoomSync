@@ -1,39 +1,44 @@
-const db = require('../config/db');
+const prisma = require('../config/prisma');
+const { number, dateOnly, timestamp } = require('../utils/prismaFormat');
 
 const PaymentModel = {
     async getPaymentsByGroup(groupId) {
-        const rows = await db.all(`
-            SELECT p.payment_id, p.amount, p.payment_mode, p.note, p.payment_date, p.status, p.created_at,
-                   p.paid_by, u1.name as paid_by_name,
-                   p.paid_to, u2.name as paid_to_name
-            FROM payments p
-            JOIN users u1 ON p.paid_by = u1.user_id
-            JOIN users u2 ON p.paid_to = u2.user_id
-            WHERE p.group_id = ?
-            ORDER BY p.payment_date DESC, p.created_at DESC
-        `, [groupId]);
-        return rows;
+        const payments = await prisma.payment.findMany({
+            where: { groupId: Number(groupId) },
+            include: { paidBy: true, paidTo: true },
+            orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }]
+        });
+        return payments.map(payment => ({
+            payment_id: payment.paymentId,
+            amount: number(payment.amount),
+            payment_mode: payment.paymentMode,
+            note: payment.note,
+            payment_date: dateOnly(payment.paymentDate),
+            status: payment.status,
+            created_at: timestamp(payment.createdAt),
+            paid_by: payment.paidById,
+            paid_by_name: payment.paidBy.name,
+            paid_to: payment.paidToId,
+            paid_to_name: payment.paidTo.name
+        }));
     },
 
     async getPaymentById(paymentId) {
-        const rows = await db.all('SELECT * FROM payments WHERE payment_id = ?', [paymentId]);
-        return rows[0];
+        const payment = await prisma.payment.findUnique({ where: { paymentId: Number(paymentId) } });
+        return payment && { ...payment, payment_id: payment.paymentId, paid_by: payment.paidById, paid_to: payment.paidToId, amount: number(payment.amount), payment_date: dateOnly(payment.paymentDate) };
     },
 
     async addPayment(groupId, paidBy, paidTo, amount, paymentMode, note, paymentDate) {
-        const result = await db.run(
-            'INSERT INTO payments (group_id, paid_by, paid_to, amount, payment_mode, note, payment_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [groupId, paidBy, paidTo, amount, paymentMode, note || null, paymentDate, 'pending']
-        );
-        return result.lastID;
+        const payment = await prisma.payment.create({ data: { groupId: Number(groupId), paidById: Number(paidBy), paidToId: Number(paidTo), amount, paymentMode, note: note || null, paymentDate: new Date(`${paymentDate}T00:00:00.000Z`), status: 'pending' } });
+        return payment.paymentId;
     },
 
     async updatePaymentStatus(paymentId, status) {
-        await db.run('UPDATE payments SET status = ? WHERE payment_id = ?', [status, paymentId]);
+        await prisma.payment.update({ where: { paymentId: Number(paymentId) }, data: { status } });
     },
 
     async deletePayment(paymentId) {
-        await db.run('DELETE FROM payments WHERE payment_id = ?', [paymentId]);
+        await prisma.payment.delete({ where: { paymentId: Number(paymentId) } });
     }
 };
 

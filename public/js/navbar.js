@@ -194,6 +194,9 @@ async function loadUserProfile() {
         const res = await apiFetch('/api/users/me', {}, true); // silent load
         if (res.success && res.data) {
             const user = res.data;
+            // Keep legacy page scripts in sync for OAuth sessions, which do
+            // not pass through the login form that normally sets localStorage.
+            setUserId(user.user_id);
             document.getElementById('navUserName').textContent = user.name;
             document.getElementById('navUserEmail').textContent = user.email;
             document.getElementById('navUserInitial').textContent = user.name.charAt(0).toUpperCase();
