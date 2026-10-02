@@ -11,7 +11,7 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma migrate deploy && prisma generate",
+    "vercel-build": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:mysql-to-postgres": "node scripts/migrate-mysql-to-postgres.js"

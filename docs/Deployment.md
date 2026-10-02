@@ -26,6 +26,10 @@ Prisma owns the PostgreSQL schema through checked-in migrations:
 3. Run `npx prisma migrate deploy`.
 4. For the existing MySQL deployment, also set `MYSQL_DATABASE_URL` and run `npm run db:migrate:mysql-to-postgres`.
 
+The Vercel build only runs `prisma generate`. Run database migrations separately
+from a trusted environment before deploying; this prevents a temporary database
+network issue from blocking the application deployment.
+
 **Note:** Do not execute the legacy `database/schema_mysql.sql` for the new deployment. Use the Prisma migration in `prisma/migrations/`.
 
 ## 3. Configure Vercel
