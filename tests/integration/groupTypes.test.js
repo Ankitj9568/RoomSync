@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { captchaSolution } = require('../helpers/captcha');
 
 jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
@@ -47,7 +48,7 @@ describe('group types and PG billing', () => {
 
     beforeAll(async () => {
         agent = request.agent(app);
-        await agent.post('/api/auth/register').send({ name: 'Type User', email: `types${Date.now()}@test.com`, password: 'password123' });
+        await agent.post('/api/auth/register').send({ name: 'Type User', email: `types${Date.now()}@test.com`, password: 'password123', ...await captchaSolution(agent) });
     });
 
     beforeEach(() => {
@@ -104,14 +105,14 @@ describe('group types and PG billing', () => {
 
     test('signup stores the account type and routes onboarding', async () => {
         const res = await request(app).post('/api/auth/register').send({
-            name: 'Owner Sign', email: `ownersign${Date.now()}@test.com`, password: 'password123', account_type: 'owner'
+            name: 'Owner Sign', email: `ownersign${Date.now()}@test.com`, password: 'password123', account_type: 'owner', ...await captchaSolution(request(app))
         });
         expect(res.statusCode).toEqual(201);
         expect(res.body.data.account_type).toBe('owner');
         expect(res.body.data.onboarding).toBe('/pages/groups.html?type=pg');
 
         const bad = await request(app).post('/api/auth/register').send({
-            name: 'Bad Type', email: `badtype${Date.now()}@test.com`, password: 'password123', account_type: 'guest'
+            name: 'Bad Type', email: `badtype${Date.now()}@test.com`, password: 'password123', account_type: 'guest', ...await captchaSolution(request(app))
         });
         expect(bad.statusCode).toEqual(400);
     });

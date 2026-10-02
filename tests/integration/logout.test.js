@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { captchaSolution } = require('../helpers/captcha');
 
 // Logout must fully terminate the session: the response clears the session
 // cookie, and the old cookie no longer authenticates afterwards.
@@ -31,7 +32,7 @@ describe('logout terminates the session', () => {
 
     test('logout clears the session cookie and the session stops working', async () => {
         const agent = request.agent(app);
-        await agent.post('/api/auth/register').send({ name: 'Logout User', email, password: 'password123' });
+        await agent.post('/api/auth/register').send({ name: 'Logout User', email, password: 'password123', ...await captchaSolution(agent) });
 
         const authed = await agent.get('/api/users/me');
         expect(authed.statusCode).toEqual(200);

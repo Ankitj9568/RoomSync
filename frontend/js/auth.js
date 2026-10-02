@@ -1,6 +1,48 @@
 // auth.js - Authentication Logic
 
+// Human-check helpers (zero-dependency arithmetic CAPTCHA).
+async function loadCaptcha(kind) {
+    const questionEl = document.getElementById(`captchaQuestion-${kind}`);
+    const tokenEl = document.getElementById(`captchaToken-${kind}`);
+    if (!questionEl || !tokenEl) return;
+    try {
+        const res = await apiFetch('/api/auth/captcha', {}, true);
+        if (res.success) {
+            questionEl.textContent = res.data.question;
+            tokenEl.value = res.data.token;
+        }
+    } catch (error) {
+        questionEl.textContent = 'Could not load the human check. Retry.';
+    }
+}
+
+function refreshCaptcha(kind) {
+    const answerEl = document.getElementById(`captchaAnswer-${kind}`);
+    if (answerEl) answerEl.value = '';
+    loadCaptcha(kind);
+}
+
+function captchaFields(kind) {
+    return {
+        captchaToken: (document.getElementById(`captchaToken-${kind}`) || {}).value || '',
+        captchaAnswer: (document.getElementById(`captchaAnswer-${kind}`) || {}).value || ''
+    };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    loadCaptcha('login');
+    loadCaptcha('register');
+
+    // Owners arriving from Google hit the second factor here.
+    const oauthFlag = new URLSearchParams(window.location.search).get('oauth');
+    if (oauthFlag === 'mfa-required') {
+        const loginForm = document.getElementById('loginForm');
+        const mfaForm = document.getElementById('mfaForm');
+        if (loginForm && mfaForm) {
+            loginForm.classList.add('d-none');
+            mfaForm.classList.remove('d-none');
+        }
+    }
     
     // Handle Login Form
     const loginForm = document.getElementById('loginForm');
@@ -16,6 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const selected = document.querySelector('input[name="loginRole"]:checked');
             const hint = document.getElementById('loginRoleHint');
             if (selected && hint && loginRoleHints[selected.value]) hint.textContent = loginRoleHints[selected.value];
+            const roleName = document.getElementById('loginRoleName');
+            if (selected && roleName) roleName.textContent = selected.value === 'owner' ? 'PG / Flat Owner' : selected.value.charAt(0).toUpperCase() + selected.value.slice(1);
         };
         const loginAsParam = new URLSearchParams(window.location.search).get('as');
         if (loginAsParam && loginRoleHints[loginAsParam]) {
@@ -36,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await apiFetch('/api/auth/login', {
                     method: 'POST',
-                    body: { email, password, as: loginRole }
+                    body: { email, password, as: loginRole, ...captchaFields('login') }
                 });
 
                 if (response.success) {
@@ -72,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = returnTo || (response.data && response.data.home) || '/pages/dashboard.html';
                 }
             } catch (error) {
+                refreshCaptcha('login');
                 // apiFetch already shows error message
             }
         });
@@ -117,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await apiFetch('/api/auth/register', {
                     method: 'POST',
-                    body: { name, email, password, account_type: accountType }
+                    body: { name, email, password, account_type: accountType, ...captchaFields('register') }
                 });
 
                 if (response.success) {
@@ -137,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = returnTo || response.data.onboarding || '/pages/dashboard.html';
                 }
             } catch (error) {
+                refreshCaptcha('register');
                 // Error shown by apiFetch
             }
         });

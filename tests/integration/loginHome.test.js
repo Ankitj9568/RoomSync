@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { captchaSolution } = require('../helpers/captcha');
 
 // The login page asks the role first, but the landing is decided from the
 // verified account — never from what the form claimed.
@@ -32,8 +33,8 @@ describe('role-checked login landing', () => {
     test('roommates land on the dashboard even when staff was selected', async () => {
         GroupModel.getUserGroups.mockResolvedValue([]);
         const email = `landing${Date.now()}@test.com`;
-        await request(app).post('/api/auth/register').send({ name: 'Landing', email, password: 'password123' });
-        const res = await request(app).post('/api/auth/login').send({ email, password: 'password123', as: 'staff' });
+        await request(app).post('/api/auth/register').send({ name: 'Landing', email, password: 'password123', ...await captchaSolution(request(app)) });
+        const res = await request(app).post('/api/auth/login').send({ email, password: 'password123', as: 'staff', ...await captchaSolution(request(app)) });
         expect(res.statusCode).toEqual(200);
         expect(res.body.data.home).toBe('/pages/dashboard.html');
     });
@@ -41,8 +42,8 @@ describe('role-checked login landing', () => {
     test('staff-only accounts land on tasks', async () => {
         GroupModel.getUserGroups.mockResolvedValue([{ group_id: 1, role: 'staff' }]);
         const email = `stafflanding${Date.now()}@test.com`;
-        await request(app).post('/api/auth/register').send({ name: 'Staff Landing', email, password: 'password123', account_type: 'staff' });
-        const res = await request(app).post('/api/auth/login').send({ email, password: 'password123', as: 'staff' });
+        await request(app).post('/api/auth/register').send({ name: 'Staff Landing', email, password: 'password123', account_type: 'staff', ...await captchaSolution(request(app)) });
+        const res = await request(app).post('/api/auth/login').send({ email, password: 'password123', as: 'staff', ...await captchaSolution(request(app)) });
         expect(res.statusCode).toEqual(200);
         expect(res.body.data.home).toBe('/pages/tasks.html');
     });

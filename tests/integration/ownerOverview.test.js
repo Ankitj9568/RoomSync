@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { captchaSolution } = require('../helpers/captcha');
 
 jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
@@ -49,7 +50,7 @@ describe('owner overview stays PG-scoped', () => {
     beforeAll(async () => {
         agent = request.agent(app);
         const email = `pgowner${Date.now()}@test.com`;
-        await agent.post('/api/auth/register').send({ name: 'PG Owner', email, password: 'password123' });
+        await agent.post('/api/auth/register').send({ name: 'PG Owner', email, password: 'password123', ...await captchaSolution(agent) });
     });
 
     beforeEach(() => {

@@ -1,5 +1,6 @@
 const request = require('supertest');
 const { generateToken } = require('../../backend/utils/totp');
+const { captchaSolution } = require('../helpers/captcha');
 
 jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
@@ -56,12 +57,12 @@ describe('owner multi-factor authentication', () => {
     const password = 'password123';
 
     beforeAll(async () => {
-        await request(app).post('/api/auth/register').send({ name: 'PG Owner', email, password });
+        await request(app).post('/api/auth/register').send({ name: 'PG Owner', email, password, ...await captchaSolution(request(app)) });
     });
 
     test('non-owners log in without MFA', async () => {
         GroupModel.getUserGroups.mockResolvedValue([]);
-        const res = await request(app).post('/api/auth/login').send({ email, password });
+        const res = await request(app).post('/api/auth/login').send({ email, password, ...await captchaSolution(request(app)) });
         expect(res.statusCode).toEqual(200);
         expect(res.body.mfaRequired).toBeFalsy();
         expect(res.body.mfaSetupRequired).toBeFalsy();
@@ -70,8 +71,8 @@ describe('owner multi-factor authentication', () => {
     test('owner accounts need MFA even before owning a group', async () => {
         GroupModel.getUserGroups.mockResolvedValue([]);
         const ownerEmail = `acctowner${Date.now()}@test.com`;
-        await request(app).post('/api/auth/register').send({ name: 'Acct Owner', email: ownerEmail, password, account_type: 'owner' });
-        const res = await request(app).post('/api/auth/login').send({ email: ownerEmail, password });
+        await request(app).post('/api/auth/register').send({ name: 'Acct Owner', email: ownerEmail, password, account_type: 'owner', ...await captchaSolution(request(app)) });
+        const res = await request(app).post('/api/auth/login').send({ email: ownerEmail, password, ...await captchaSolution(request(app)) });
         expect(res.statusCode).toEqual(200);
         expect(res.body.mfaSetupRequired).toBe(true);
     });
@@ -79,7 +80,7 @@ describe('owner multi-factor authentication', () => {
     test('owners must enroll before entering', async () => {
         GroupModel.getUserGroups.mockResolvedValue([{ group_id: 1, role: 'owner' }]);
         const agent = request.agent(app);
-        const login = await agent.post('/api/auth/login').send({ email, password });
+        const login = await agent.post('/api/auth/login').send({ email, password, ...await captchaSolution(agent) });
         expect(login.statusCode).toEqual(200);
         expect(login.body.mfaSetupRequired).toBe(true);
 
@@ -104,7 +105,7 @@ describe('owner multi-factor authentication', () => {
     test('owners with MFA enabled face a challenge at login', async () => {
         GroupModel.getUserGroups.mockResolvedValue([{ group_id: 1, role: 'owner' }]);
         const agent = request.agent(app);
-        const login = await agent.post('/api/auth/login').send({ email, password });
+        const login = await agent.post('/api/auth/login').send({ email, password, ...await captchaSolution(agent) });
         expect(login.body.mfaRequired).toBe(true);
 
         const wrong = await agent.post('/api/auth/mfa/challenge').send({ token: '000000' });

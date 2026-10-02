@@ -66,6 +66,12 @@
                         <button class="btn btn-outline-secondary toggle-password" type="button" tabindex="-1"><i class="bi bi-eye"></i></button>
                     </div>
                 </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Human check <button type="button" class="btn btn-link btn-sm p-0 ms-1" onclick="refreshCaptcha('login')" title="New question"><i class="bi bi-arrow-clockwise"></i></button></label>
+                    <div class="small fw-medium mb-1" id="captchaQuestion-login">Loading...</div>
+                    <input type="hidden" id="captchaToken-login">
+                    <input type="text" class="form-control" id="captchaAnswer-login" inputmode="numeric" placeholder="Your answer" required autocomplete="off">
+                </div>
                  <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
             </form>
             <form id="mfaForm" class="d-none">
@@ -86,21 +92,7 @@
                 <i class="bi bi-google me-2"></i> Continue with Google
             </a>
             <div class="text-start mb-3">
-                <div class="fw-medium small text-muted-custom mb-2">Which one are you?</div>
-                <div class="d-grid gap-2">
-                    <a href="register.html?as=roommate" class="role-pick">
-                        <i class="bi bi-people fs-5"></i>
-                        <span><strong>Roommate</strong><small>Split costs with flatmates.</small></span>
-                    </a>
-                    <a href="register.html?as=owner" class="role-pick">
-                        <i class="bi bi-building fs-5"></i>
-                        <span><strong>PG / Flat Owner</strong><small>Rooms, staff, and billing (second-step login).</small></span>
-                    </a>
-                    <a href="register.html?as=staff" class="role-pick">
-                        <i class="bi bi-tools fs-5"></i>
-                        <span><strong>Staff</strong><small>Cook, maid, or watchman joining with an invite code.</small></span>
-                    </a>
-                </div>
+                <div class="fw-medium small text-muted-custom mb-2">Signing in as <span id="loginRoleName">Roommate</span> — change above for Owner or Staff.</div>
             </div>
             <p class="text-muted-custom">Don't have an account? <a href="register.html" class="text-primary-custom text-decoration-none">Create Account</a></p>
         </div>

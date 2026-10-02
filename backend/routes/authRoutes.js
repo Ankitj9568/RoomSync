@@ -39,6 +39,7 @@ function authRateLimit(req, res, next) {
 
 router.post('/register', authRateLimit, authController.register);
 router.post('/login', authRateLimit, authController.login);
+router.get('/captcha', authController.captchaChallenge);
 router.post('/logout', authMiddleware, authController.logout);
 
 // Owner multi-factor authentication (TOTP authenticator apps).

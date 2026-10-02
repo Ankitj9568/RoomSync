@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { captchaSolution } = require('../helpers/captcha');
 // Auth contract tests use an in-memory repository so they do not require a
 // developer PostgreSQL instance. Prisma-backed database coverage belongs in
 // the deployment/integration suite with TEST_DATABASE_URL configured.
@@ -38,7 +39,8 @@ describe('Auth API (Black-box)', () => {
             .send({
                 name: 'Test User',
                 email: uniqueEmail,
-                password: 'password123'
+                password: 'password123',
+                ...await captchaSolution(request(app))
             });
         
         expect(res.statusCode).toEqual(201);
@@ -50,7 +52,8 @@ describe('Auth API (Black-box)', () => {
         const res = await request(app)
             .post('/api/auth/register')
             .send({
-                email: uniqueEmail
+                email: uniqueEmail,
+                ...await captchaSolution(request(app))
             });
         
         expect(res.statusCode).toEqual(400);
@@ -62,7 +65,8 @@ describe('Auth API (Black-box)', () => {
             .post('/api/auth/login')
             .send({
                 email: uniqueEmail,
-                password: 'password123'
+                password: 'password123',
+                ...await captchaSolution(request(app))
             });
         
         expect(res.statusCode).toEqual(200);
@@ -75,10 +79,29 @@ describe('Auth API (Black-box)', () => {
             .post('/api/auth/login')
             .send({
                 email: uniqueEmail,
-                password: 'wrongpassword'
+                password: 'wrongpassword',
+                ...await captchaSolution(request(app))
             });
         
         expect(res.statusCode).toEqual(401);
         expect(res.body.success).toBe(false);
+    });
+
+    it('should require a human check on login', async () => {
+        const res = await request(app)
+            .post('/api/auth/login')
+            .send({ email: uniqueEmail, password: 'password123' });
+
+        expect(res.statusCode).toEqual(400);
+        expect(res.body.message).toBe('INVALID_CAPTCHA');
+    });
+
+    it('should require a human check on register', async () => {
+        const res = await request(app)
+            .post('/api/auth/register')
+            .send({ name: 'No Captcha', email: `nocap${Date.now()}@test.com`, password: 'password123' });
+
+        expect(res.statusCode).toEqual(400);
+        expect(res.body.message).toBe('INVALID_CAPTCHA');
     });
 });

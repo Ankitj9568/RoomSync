@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { captchaSolution } = require('../helpers/captcha');
 
 jest.mock('../../backend/models/userModel', () => {
     const users = new Map();
@@ -49,7 +50,7 @@ describe('task board authorization', () => {
     beforeAll(async () => {
         agent = request.agent(app);
         const email = `tasks${Date.now()}@test.com`;
-        const res = await agent.post('/api/auth/register').send({ name: 'Task User', email, password: 'password123' });
+        const res = await agent.post('/api/auth/register').send({ name: 'Task User', email, password: 'password123', ...await captchaSolution(agent) });
         userId = res.body.data.user_id;
     });
 

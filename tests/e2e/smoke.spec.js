@@ -1,5 +1,16 @@
 const { test, expect } = require('@playwright/test');
 
+async function solveCaptcha(page, kind) {
+    const question = await page.textContent(`#captchaQuestion-${kind}`);
+    const match = String(question).match(/What is (\d+) ([+\-×]) (\d+)\?/);
+    if (!match) throw new Error(`Unparseable captcha: ${question}`);
+    const [, left, op, right] = match;
+    const answer = op === '+' ? Number(left) + Number(right)
+        : op === '-' ? Number(left) - Number(right)
+        : Number(left) * Number(right);
+    return String(answer);
+}
+
 // Smoke: a new user can register and land inside the app on a mobile viewport.
 // Registration is used (instead of a fixed login) so the suite needs no seed
 // data and can run against any migrated database.
@@ -14,6 +25,7 @@ test('register and reach the app on mobile', async ({ page }) => {
     await page.fill('#email', email);
     await page.fill('#password', 'password123');
     await page.fill('#confirmPassword', 'password123');
+    await page.fill('#captchaAnswer-register', await solveCaptcha(page, 'register'));
     await page.click('#registerForm button[type="submit"]');
 
     // No groups yet, so the navbar sends first-time users to groups setup.

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { generateSecret, verifyToken, provisioningUri } = require('../utils/totp');
+const { verifyChallenge, newChallenge } = require('../utils/captcha');
 const UserModel = require('../models/userModel');
 const GroupModel = require('../models/groupModel');
 const { normalizeEmail, isValidEmail } = require('../utils/validation');
@@ -30,11 +31,25 @@ async function mfaRequiredFor(user) {
 }
 
 const authController = {
+    // Human check shown before password login/register. Stateless and
+    // rate-limited; the answer expires with the token.
+    async captchaChallenge(req, res) {
+        try {
+            res.json({ success: true, data: newChallenge() });
+        } catch (error) {
+            console.error('Captcha error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
     async register(req, res) {
         try {
             const name = String(req.body.name || '').trim();
             const email = normalizeEmail(req.body.email);
             const { password } = req.body;
+            if (!verifyChallenge(req.body.captchaToken, req.body.captchaAnswer)) {
+                return res.status(400).json({ success: false, message: 'INVALID_CAPTCHA' });
+            }
             const accountType = normalizeAccountType(req.body.account_type || 'roommate');
             if (!isValidAccountType(accountType)) {
                 return res.status(400).json({ success: false, message: 'Invalid account type' });
@@ -94,6 +109,10 @@ const authController = {
         try {
             const email = normalizeEmail(req.body.email);
             const { password } = req.body;
+
+            if (!verifyChallenge(req.body.captchaToken, req.body.captchaAnswer)) {
+                return res.status(400).json({ success: false, message: 'INVALID_CAPTCHA' });
+            }
             
             if (!email || !password) {
                 return res.status(400).json({ success: false, message: 'Email and password are required' });
@@ -144,9 +163,18 @@ const authController = {
 
     async oauthCallback(req, res) {
         if (!req.user) return res.redirect('/pages/login.html?oauth=failed');
+        // Google sign-ins follow the same role rules: owners pass the
+        // authenticator step, staff land on tasks, others on the dashboard.
+        const oauthUser = { user_id: req.user.userId, account_type: req.user.accountType || 'roommate' };
+        if (await mfaRequiredFor(oauthUser)) {
+            req.session.userId = req.user.userId;
+            req.session.userName = req.user.name;
+            req.session.mfaPending = true;
+            return res.redirect('/pages/login.html?oauth=mfa-required');
+        }
         req.session.userId = req.user.userId;
         req.session.userName = req.user.name;
-        res.redirect('/pages/dashboard.html');
+        res.redirect(await homeFor(oauthUser));
     },
 
     // Whether the current user must use MFA (owner account, or owner of at
@@ -224,8 +252,7 @@ const authController = {
 
     // Owners cannot disable MFA while they still own a group or hold an
     // owner account.
-    async mfaDisable(req, res) {
-        try {
+    async mfaDisable(req, res) {        try {
             const { password } = req.body;
             const user = await UserModel.findByIdWithHash(req.session.userId);
             if (!user || !user.password_hash || !password || !await bcrypt.compare(password, user.password_hash)) {

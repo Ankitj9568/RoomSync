@@ -71,6 +71,12 @@
                     </div>
                     <div class="form-text" id="accountTypeHint">Roommates split costs and run the home together.</div>
                 </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Human check <button type="button" class="btn btn-link btn-sm p-0 ms-1" onclick="refreshCaptcha('register')" title="New question"><i class="bi bi-arrow-clockwise"></i></button></label>
+                    <div class="small fw-medium mb-1" id="captchaQuestion-register">Loading...</div>
+                    <input type="hidden" id="captchaToken-register">
+                    <input type="text" class="form-control" id="captchaAnswer-register" inputmode="numeric" placeholder="Your answer" required autocomplete="off">
+                </div>
                  <button type="submit" class="btn btn-primary w-100 mb-3">Register</button>
             </form>
             <div class="d-flex align-items-center gap-2 text-muted-custom small mb-3">
