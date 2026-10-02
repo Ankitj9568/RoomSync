@@ -2,7 +2,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSettingsProfile();
-    
+    loadMfaSection();
+
     if (getActiveGroupId()) {
         loadGroupSettings();
     }
@@ -104,12 +105,14 @@ async function loadGroupSettings() {
                 return;
             }
             let currentUserIsAdmin = false;
-            
+            let currentUserIsRoommateAdmin = false;
+
             res.data.members.forEach(m => {
                 const isMe = m.user_id === currentUserId;
                 const roleLabel = m.role.charAt(0).toUpperCase() + m.role.slice(1);
                 const roleBadge = { admin: 'primary', owner: 'warning', staff: 'info', member: 'secondary' }[m.role] || 'secondary';
                 if (isMe && ['admin', 'owner'].includes(m.role)) currentUserIsAdmin = true;
+                if (isMe && m.role === 'admin') currentUserIsRoommateAdmin = true;
                 
                 html += `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -124,6 +127,10 @@ async function loadGroupSettings() {
             const adminPanel = document.getElementById('adminSettingsPanel');
             if (currentUserIsAdmin) {
                 adminPanel.classList.remove('d-none');
+
+                // Balance adjustments are roommate-shared money: only
+                // roommate-admins see this section, never PG owners.
+                document.getElementById('adjustmentSection').classList.toggle('d-none', !currentUserIsRoommateAdmin);
                 
                 // Set toggle state
                 const toggle = document.getElementById('allowDirectJoinToggle');
@@ -301,5 +308,51 @@ async function handlePasswordChange(e) {
         e.target.reset();
     } catch (error) {
         alert(error.message || 'Failed to change password');
+    }
+}
+
+// Owner two-step verification (TOTP). Only shown to PG/flat owners.
+async function loadMfaSection() {
+    const card = document.getElementById('mfaCard');
+    if (!card) return;
+
+    try {
+        const res = await apiFetch('/api/auth/mfa/status', {}, true);
+        if (!res.success || !res.data || !res.data.required) return;
+        card.classList.remove('d-none');
+
+        const statusEl = document.getElementById('mfaStatus');
+        if (res.data.enabled) {
+            statusEl.innerHTML = '<div class="alert alert-success small mb-0"><i class="bi bi-check-circle me-1"></i>Two-step verification is on for your owner account.</div>';
+            return;
+        }
+
+        statusEl.innerHTML = '<div class="alert alert-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Owner accounts must enable two-step verification before using RoomSync.</div>';
+        const setupRes = await apiFetch('/api/auth/mfa/setup', { method: 'POST', body: {} }, true);
+        if (!setupRes.success) return;
+
+        document.getElementById('mfaSetupBox').classList.remove('d-none');
+        document.getElementById('mfaSecret').textContent = setupRes.data.secret;
+        const qrEl = document.getElementById('mfaQr');
+        qrEl.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(qrEl, { text: setupRes.data.otpauth_url, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
+        }
+
+        document.getElementById('mfaConfirmForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await apiFetch('/api/auth/mfa/confirm', {
+                    method: 'POST',
+                    body: { token: document.getElementById('mfaConfirmCode').value }
+                });
+                alert('Two-step verification enabled!');
+                window.location.href = '/pages/dashboard.html';
+            } catch (error) {
+                alert(error.message || 'Invalid code, try again');
+            }
+        }, { once: true });
+    } catch (error) {
+        console.error('Failed to load MFA section', error);
     }
 }

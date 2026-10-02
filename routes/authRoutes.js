@@ -41,6 +41,13 @@ router.post('/register', authRateLimit, authController.register);
 router.post('/login', authRateLimit, authController.login);
 router.post('/logout', authMiddleware, authController.logout);
 
+// Owner multi-factor authentication (TOTP authenticator apps).
+router.get('/mfa/status', authMiddleware, authController.mfaStatus);
+router.post('/mfa/setup', authRateLimit, authMiddleware, authController.mfaSetup);
+router.post('/mfa/confirm', authRateLimit, authMiddleware, authController.mfaConfirm);
+router.post('/mfa/challenge', authRateLimit, authMiddleware, authController.mfaChallenge);
+router.post('/mfa/disable', authRateLimit, authMiddleware, authController.mfaDisable);
+
 router.get('/google', (req, res, next) => {
     if (!configureGoogleOAuth()) return res.status(503).json({ success: false, message: 'GOOGLE_OAUTH_NOT_CONFIGURED' });
     const state = crypto.randomBytes(24).toString('hex');

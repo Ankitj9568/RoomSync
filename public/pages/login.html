@@ -56,6 +56,17 @@
                 </div>
                  <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
             </form>
+            <form id="mfaForm" class="d-none">
+                <div class="alert alert-info text-start small">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    Owner accounts need a second step. Enter the 6-digit code from your authenticator app.
+                </div>
+                <div class="mb-3 text-start">
+                    <label for="mfaCode" class="form-label">Authenticator code</label>
+                    <input type="text" class="form-control text-center" id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123 456" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mb-3">Verify</button>
+            </form>
             <div class="d-flex align-items-center gap-2 text-muted-custom small mb-3">
                 <span class="border-top flex-grow-1"></span><span>or</span><span class="border-top flex-grow-1"></span>
             </div>

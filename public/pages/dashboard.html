@@ -25,11 +25,74 @@
 
     <div class="page-container">
         <h2 class="text-primary-custom mb-3" id="groupNameHeader">Dashboard</h2>
-        <div class="mb-4">
+        <div class="mb-4" id="memberQuickLinks">
             <a href="expenses.html" class="btn btn-primary me-2"><i class="bi bi-receipt"></i> Go to Expenses</a>
             <a href="groceries.html" class="btn btn-outline-secondary"><i class="bi bi-cart"></i> Go to Groceries</a>
         </div>
 
+        <!-- Owner home: PG oversight only (no roommate-shared money) -->
+        <div id="ownerHome" class="d-none">
+            <div class="row">
+                <div class="col-12 col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0"><div class="card-body text-center">
+                        <h5 class="card-title text-muted-custom">Occupancy</h5>
+                        <h2 class="display-6 mt-3" id="ownerOccupancy">–</h2>
+                        <p class="text-muted-custom small" id="ownerOccupancySub">members</p>
+                    </div></div>
+                </div>
+                <div class="col-12 col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0"><div class="card-body text-center">
+                        <h5 class="card-title text-muted-custom">Dues Owed To You</h5>
+                        <h2 class="display-6 mt-3 text-warning" id="ownerDues">₹ 0</h2>
+                        <p class="text-muted-custom small" id="ownerDuesSub">no pending dues</p>
+                    </div></div>
+                </div>
+                <div class="col-12 col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0"><div class="card-body text-center">
+                        <h5 class="card-title text-muted-custom">Rent Collected (Month)</h5>
+                        <h2 class="display-6 mt-3 text-success" id="ownerRent">₹ 0</h2>
+                        <p class="text-muted-custom small" id="ownerRentSub">approved payments to you</p>
+                    </div></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0"><div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2">Task Status</h5>
+                        <div id="ownerTasks" class="mt-2 text-muted">Loading...</div>
+                        <a href="tasks.html" class="btn btn-sm btn-outline-primary mt-2">Manage Tasks</a>
+                    </div></div>
+                </div>
+                <div class="col-12 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0"><div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2">Recent Payments To You</h5>
+                        <div id="ownerPayments" class="mt-2 text-muted">Loading...</div>
+                    </div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff home: today's work -->
+        <div id="staffHome" class="d-none">
+            <div class="row">
+                <div class="col-12 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0"><div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2">My Tasks Today</h5>
+                        <div id="staffTasks" class="mt-2 text-muted">Loading...</div>
+                        <a href="tasks.html" class="btn btn-sm btn-outline-primary mt-2">Open Task Board</a>
+                    </div></div>
+                </div>
+                <div class="col-12 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0"><div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2">Today's Meal Headcount</h5>
+                        <div id="staffHeadcount" class="mt-2 text-muted">Loading...</div>
+                        <a href="meals.html" class="btn btn-sm btn-outline-primary mt-2">Open Meals</a>
+                    </div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="memberHome">
         <div class="row">
             <!-- Balance Card -->
             <div class="col-12 col-md-4 mb-4">
@@ -64,6 +127,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- Recent Activity Section -->

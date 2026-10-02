@@ -15,6 +15,21 @@
 > groceries, and the shopping list, but are excluded from expenses, payments,
 > settlements, adjustments, and spending analytics, and are never included in
 > expense splits.
+>
+> ### Household tasks
+>
+> The `tasks` table (`prisma/migrations/0003_tasks/`) backs the owner-assigned
+> chore board: `category` is one of cooking, cleaning, utensils, laundry,
+> grocery, maintenance, security, or other; `schedule` is once, daily, or
+> weekly; `status` is pending or done. Managers create, edit, and delete;
+> assignees flip their own tasks; everyone else reads.
+>
+> ### Owner MFA
+>
+> `users.totp_secret` / `users.mfa_enabled` (`prisma/migrations/0004_user_mfa/`)
+> back TOTP second-factor auth (`utils/totp.js`, RFC 6238, zero dependencies).
+> Any user who owns at least one group must enroll; password login issues a
+> restricted session until enrollment or challenge completes.
 
 ## ER Diagram (Textual)
 

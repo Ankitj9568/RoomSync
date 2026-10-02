@@ -22,6 +22,10 @@ jest.mock('../../models/userModel', () => {
 
 const app = require('../../server');
 
+jest.mock('../../models/groupModel', () => ({
+    getUserGroups: async () => []
+}));
+
 describe('logout terminates the session', () => {
     const email = `logout${Date.now()}@test.com`;
 

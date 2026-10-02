@@ -1,7 +1,7 @@
 const GroupModel = require('../models/groupModel');
 const UserModel = require('../models/userModel');
 const ActivityLogModel = require('../models/activityLogModel');
-const { isValidTime } = require('../utils/validation');
+const { isValidTime, normalizeEmail, isValidEmail } = require('../utils/validation');
 const { isValidRole, normalizeRole, canManage, hasRemainingManager } = require('../utils/roles');
 const crypto = require('crypto');
 
@@ -251,6 +251,43 @@ const groupController = {
             res.json({ success: true, message: 'Member removed successfully' });
         } catch (error) {
             console.error('Remove member error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
+    // Owners/managers provision staff (cook, maid, watchman) accounts: if the
+    // email is new, an account with a one-time temporary password is created
+    // and the password is returned once for the owner to share offline.
+    async provisionStaffAccount(req, res) {
+        try {
+            const { group_id, name, email } = req.body;
+            const membership = await GroupModel.isMember(group_id, req.session.userId);
+            if (!membership || !canManage(membership.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            const cleanName = String(name || '').trim();
+            const cleanEmail = normalizeEmail(email);
+            if (!cleanName || cleanName.length < 2 || cleanName.length > 100) {
+                return res.status(400).json({ success: false, message: 'Valid name is required' });
+            }
+            if (!isValidEmail(cleanEmail)) return res.status(400).json({ success: false, message: 'INVALID_EMAIL_FORMAT' });
+
+            const existing = await UserModel.findByEmail(cleanEmail);
+            if (existing) {
+                if (await GroupModel.isMember(group_id, existing.user_id)) {
+                    return res.status(409).json({ success: false, message: 'ALREADY_A_MEMBER' });
+                }
+                await GroupModel.addMember(group_id, existing.user_id, 'staff');
+                await ActivityLogModel.create(group_id, req.session.userId, 'ADD_MEMBER', `Added staff ${existing.name} to the group`);
+                return res.json({ success: true, data: { user_id: existing.user_id, created: false } });
+            }
+
+            const tempPassword = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12) || 'Staff12345678';
+            const password_hash = await require('bcryptjs').hash(tempPassword, 10);
+            const userId = await UserModel.create({ name: cleanName, email: cleanEmail, password_hash });
+            await GroupModel.addMember(group_id, userId, 'staff');
+            await ActivityLogModel.create(group_id, req.session.userId, 'ADD_MEMBER', `Created staff account for ${cleanName}`);
+            res.status(201).json({ success: true, data: { user_id: userId, created: true, temporary_password: tempPassword } });
+        } catch (error) {
+            console.error('Provision staff error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
     },

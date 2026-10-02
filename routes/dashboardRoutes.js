@@ -7,5 +7,6 @@ router.use(authMiddleware);
 
 router.get('/', dashboardController.getOverview);
 router.get('/analytics', dashboardController.getAnalytics);
+router.get('/owner', dashboardController.getOwnerOverview);
 
 module.exports = router;

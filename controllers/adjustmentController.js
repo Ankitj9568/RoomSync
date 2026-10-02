@@ -2,7 +2,7 @@ const AdjustmentModel = require('../models/adjustmentModel');
 const GroupModel = require('../models/groupModel');
 const ActivityLogModel = require('../models/activityLogModel');
 const { toCents } = require('../utils/validation');
-const { canManage } = require('../utils/roles');
+const { isAdmin } = require('../utils/roles');
 
 const adjustmentController = {
     async getAdjustments(req, res) {
@@ -18,7 +18,7 @@ const adjustmentController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
-            if (!canManage(isMember.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!isAdmin(isMember.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
 
             const adjustments = await AdjustmentModel.getAdjustmentsByGroup(group_id);
             res.json({ success: true, data: adjustments });
@@ -51,7 +51,7 @@ const adjustmentController = {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
             // Only admins can create manual balance adjustments
-            if (!canManage(role.role)) {
+            if (!isAdmin(role.role)) {
                 return res.status(403).json({ success: false, message: 'Only admins can create adjustments' });
             }
             if (!await GroupModel.isMember(group_id, from_user) || !await GroupModel.isMember(group_id, to_user)) {
@@ -78,7 +78,7 @@ const adjustmentController = {
             }
 
             const role = await GroupModel.isMember(adjustment.group_id, userId);
-            if (!role || !canManage(role.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            if (!role || !isAdmin(role.role)) return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
 
             await AdjustmentModel.deleteAdjustment(adjustmentId);
             res.json({ success: true, message: 'Adjustment deleted' });

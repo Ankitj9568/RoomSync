@@ -69,12 +69,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const email = document.getElementById('addMemberEmail').value;
             const role = document.getElementById('addMemberRole').value;
+            const provision = document.getElementById('provisionStaffCheck').checked;
 
             try {
-                await apiFetch('/api/groups/members/add', {
-                    method: 'POST',
-                    body: { group_id: groupId, email, role }
-                });
+                if (provision) {
+                    const name = document.getElementById('provisionStaffName').value;
+                    const res = await apiFetch('/api/groups/members/provision', {
+                        method: 'POST',
+                        body: { group_id: groupId, name, email }
+                    });
+                    if (res.data && res.data.temporary_password) {
+                        alert(`Staff account created! Temporary password (share once): ${res.data.temporary_password}`);
+                    } else {
+                        alert('Existing user added as staff.');
+                    }
+                } else {
+                    await apiFetch('/api/groups/members/add', {
+                        method: 'POST',
+                        body: { group_id: groupId, email, role }
+                    });
+                }
                 
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addMemberModal'));
                 if (modal) modal.hide();

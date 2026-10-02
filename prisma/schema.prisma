@@ -17,6 +17,8 @@ model User {
   phone                 String?
   avatarUrl             String?              @map("avatar_url")
   emailVerified         Boolean              @default(false) @map("email_verified")
+  totpSecret            String?              @map("totp_secret")
+  mfaEnabled            Boolean              @default(false) @map("mfa_enabled")
   createdAt             DateTime             @default(now()) @map("created_at")
   createdGroups         Group[]              @relation("GroupCreator")
   memberships           GroupMember[]
@@ -34,6 +36,8 @@ model User {
   joinRequests          JoinRequest[]
   activityLogs          ActivityLog[]
   oauthAccounts         OAuthAccount[]
+  assignedTasks         Task[]               @relation("TaskAssignee")
+  createdTasks          Task[]               @relation("TaskAssigner")
 
   @@map("users")
 }
@@ -56,6 +60,7 @@ model Group {
   settings      GroupSettings?
   joinRequests  JoinRequest[]
   activityLogs  ActivityLog[]
+  tasks         Task[]
 
   @@map("groups")
 }
@@ -275,4 +280,24 @@ model OAuthAccount {
   @@unique([provider, providerAccountId])
   @@index([userId])
   @@map("oauth_accounts")
+}
+
+model Task {
+  taskId       Int       @id @default(autoincrement()) @map("task_id")
+  groupId      Int       @map("group_id")
+  title        String
+  category     String    @default("other")
+  assignedToId Int?      @map("assigned_to")
+  assignedById Int       @map("assigned_by")
+  schedule     String    @default("once")
+  dueDate      DateTime? @db.Date @map("due_date")
+  status       String    @default("pending")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  completedAt  DateTime? @map("completed_at")
+  group        Group     @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  assignedTo   User?     @relation("TaskAssignee", fields: [assignedToId], references: [userId], onDelete: SetNull)
+  assignedBy   User      @relation("TaskAssigner", fields: [assignedById], references: [userId], onDelete: Restrict)
+
+  @@index([groupId, status])
+  @@map("tasks")
 }

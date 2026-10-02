@@ -2,14 +2,14 @@ const ExpenseModel = require('../models/expenseModel');
 const GroupModel = require('../models/groupModel');
 const ActivityLogModel = require('../models/activityLogModel');
 const { isValidDate, isFutureDate, toCents, centsToAmount } = require('../utils/validation');
-const { canManage, canAccessFinancials } = require('../utils/roles');
+const { canManage, canAccessPeerFinancials } = require('../utils/roles');
 
 const CATEGORIES = ['grocery', 'utility', 'rent', 'loan', 'other'];
 const EXPENSE_TYPES = ['recurring', 'ad_hoc', 'transfer'];
 
 async function memberIds(groupId) {
     const members = await GroupModel.getGroupMembers(groupId);
-    return new Set(members.filter(member => canAccessFinancials(member.role)).map(member => Number(member.user_id)));
+    return new Set(members.filter(member => canAccessPeerFinancials(member.role)).map(member => Number(member.user_id)));
 }
 
 function ensureUniqueMembers(items, idField) {
@@ -24,7 +24,7 @@ function ensureUniqueMembers(items, idField) {
 async function calculateSplits(groupId, splitType, amount, splits) {
     const allMembers = await GroupModel.getGroupMembers(groupId);
     // Staff (chef, maid) never take part in expense splits.
-    const members = allMembers.filter(member => canAccessFinancials(member.role));
+    const members = allMembers.filter(member => canAccessPeerFinancials(member.role));
     if (members.length === 0) throw new Error('Group has no members');
     const allowed = new Set(members.map(member => Number(member.user_id)));
     let selected = members;
@@ -86,7 +86,7 @@ async function validateExpenseInput(groupId, userId, input, existing = null) {
     if (!isValidDate(expenseDate) || isFutureDate(expenseDate)) throw new Error('Invalid or future expense date');
     const requester = await GroupModel.isMember(groupId, userId);
     if (!requester) throw new Error('NOT_A_MEMBER');
-    if (!canAccessFinancials(requester.role)) throw new Error('FINANCIALS_RESTRICTED');
+    if (!canAccessPeerFinancials(requester.role)) throw new Error('FINANCIALS_RESTRICTED');
 
     const splits = await calculateSplits(groupId, splitType, amount, input.splits);
     const payers = await calculatePayers(groupId, userId, amount, input.payers, input.paid_by);
@@ -105,7 +105,7 @@ const expenseController = {
             if (!group_id) return res.status(400).json({ success: false, message: 'group_id is required' });
             const membership = await GroupModel.isMember(group_id, req.session.userId);
             if (!membership) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
-            if (!canAccessFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
+            if (!canAccessPeerFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             res.json({ success: true, data: await ExpenseModel.getExpensesByGroup(group_id) });
         } catch (error) {
             console.error('Get expenses error:', error);
@@ -119,7 +119,7 @@ const expenseController = {
             if (!expense) return res.status(404).json({ success: false, message: 'EXPENSE_NOT_FOUND' });
             const membership = await GroupModel.isMember(expense.group_id, req.session.userId);
             if (!membership) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
-            if (!canAccessFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
+            if (!canAccessPeerFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             const full = (await ExpenseModel.getExpensesByGroup(expense.group_id)).find(item => Number(item.expense_id) === Number(req.params.id));
             res.json({ success: true, data: full });
         } catch (error) {
@@ -150,7 +150,7 @@ const expenseController = {
             if (!expense) return res.status(404).json({ success: false, message: 'EXPENSE_NOT_FOUND' });
             const membership = await GroupModel.isMember(expense.group_id, req.session.userId);
             if (!membership) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
-            if (!canAccessFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
+            if (!canAccessPeerFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             const full = (await ExpenseModel.getExpensesByGroup(expense.group_id)).find(item => Number(item.expense_id) === Number(req.params.id));
             const canEdit = canManage(membership.role) || full.payers.some(payer => Number(payer.user_id) === Number(req.session.userId));
             if (!canEdit) return res.status(403).json({ success: false, message: 'NOT_EXPENSE_CREATOR' });
@@ -170,7 +170,7 @@ const expenseController = {
             if (!expense) return res.status(404).json({ success: false, message: 'EXPENSE_NOT_FOUND' });
             const membership = await GroupModel.isMember(expense.group_id, req.session.userId);
             if (!membership) return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
-            if (!canAccessFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
+            if (!canAccessPeerFinancials(membership.role)) return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             const full = (await ExpenseModel.getExpensesByGroup(expense.group_id)).find(item => Number(item.expense_id) === Number(req.params.id));
             if (!canManage(membership.role) && !full.payers.some(payer => Number(payer.user_id) === Number(req.session.userId))) return res.status(403).json({ success: false, message: 'NOT_EXPENSE_CREATOR' });
             await ExpenseModel.deleteExpense(req.params.id);

@@ -128,6 +128,15 @@
                                 <option value="owner">Owner (PG/flat owner)</option>
                             </select>
                         </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="provisionStaffCheck" onchange="document.getElementById('provisionStaffNameWrap').classList.toggle('d-none', !this.checked)">
+                            <label class="form-check-label" for="provisionStaffCheck">Create a new staff account with a temporary password</label>
+                            <div class="form-text">For cooks, maids, or watchmen joining for the first time. Share the password with them offline; they can change it in Settings.</div>
+                        </div>
+                        <div class="mb-3 d-none" id="provisionStaffNameWrap">
+                            <label class="form-label">Staff Full Name</label>
+                            <input type="text" class="form-control" id="provisionStaffName" placeholder="e.g. Ramesh Kumar">
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

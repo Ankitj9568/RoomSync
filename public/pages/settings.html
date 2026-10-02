@@ -76,6 +76,23 @@
                     </div>
                 </div>
 
+                <!-- Owner MFA -->
+                <div class="card shadow-sm border-0 mt-4 d-none" id="mfaCard">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted-custom border-bottom pb-2 mb-4"><i class="bi bi-shield-lock me-1"></i> Owner Two-Step Verification</h5>
+                        <div id="mfaStatus"></div>
+                        <div id="mfaSetupBox" class="d-none">
+                            <p class="small text-muted">Scan this code with Google Authenticator, Authy, or any TOTP app, then enter the 6-digit code.</p>
+                            <div class="d-inline-block bg-white p-2 rounded border mb-3" id="mfaQr"></div>
+                            <p class="small text-muted font-monospace" id="mfaSecret"></p>
+                            <form id="mfaConfirmForm" class="d-flex gap-2">
+                                <input type="text" class="form-control text-center" id="mfaConfirmCode" inputmode="numeric" maxlength="8" placeholder="123 456" required>
+                                <button type="submit" class="btn btn-primary">Enable</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mt-4">
                     <a class="btn btn-outline-danger w-100" href="#" id="settingsLogoutBtn" onclick="document.getElementById('logoutBtn') && document.getElementById('logoutBtn').click(); return false;"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
@@ -117,6 +134,7 @@
                             </div>
 
                             <h6 class="text-muted-custom mb-2">Balance Adjustment</h6>
+                            <div id="adjustmentSection">
                             <form id="adjustmentForm" class="border rounded p-3 mb-3">
                                 <select class="form-select form-select-sm mb-2" id="adjustmentFromUser" required></select>
                                 <select class="form-select form-select-sm mb-2" id="adjustmentToUser" required></select>
@@ -125,6 +143,7 @@
                                 <button class="btn btn-sm btn-primary w-100" type="submit">Add Adjustment</button>
                             </form>
                             <div id="adjustmentsList" class="small"></div>
+                            </div>
                         </div>
 
                         <div class="mb-4">

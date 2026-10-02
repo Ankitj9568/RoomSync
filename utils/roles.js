@@ -22,6 +22,12 @@ const MANAGER_ROLES = ['admin', 'owner'];
 // Roles allowed to see and touch financial data. Staff are excluded.
 const FINANCIAL_ROLES = ['admin', 'owner', 'member'];
 
+// Roles allowed into roommate-to-roommate financials (expense splits, peer
+// settlements, spending analytics, adjustments). Owners are intentionally
+// excluded: they oversee PG-level matters (rent collection, occupancy,
+// tasks) while roommate-shared money stays between roommates.
+const PEER_FINANCIAL_ROLES = ['admin', 'member'];
+
 function normalizeRole(role) {
     return String(role || '').trim().toLowerCase();
 }
@@ -36,9 +42,20 @@ function canManage(role) {
     return MANAGER_ROLES.includes(normalizeRole(role));
 }
 
+// True only for roommate-admins. Balance adjustments are roommate-shared
+// money, so owners (PG oversight) cannot create them.
+function isAdmin(role) {
+    return normalizeRole(role) === 'admin';
+}
+
 // False for staff. Used to keep household workers out of financial endpoints.
 function canAccessFinancials(role) {
     return FINANCIAL_ROLES.includes(normalizeRole(role));
+}
+
+// False for staff AND owners. Roommate-shared money stays between roommates.
+function canAccessPeerFinancials(role) {
+    return PEER_FINANCIAL_ROLES.includes(normalizeRole(role));
 }
 
 // True when at least one manager remains, used before demotions and removals.
@@ -52,9 +69,12 @@ module.exports = {
     GROUP_ROLES,
     MANAGER_ROLES,
     FINANCIAL_ROLES,
+    PEER_FINANCIAL_ROLES,
     normalizeRole,
     isValidRole,
     canManage,
+    isAdmin,
     canAccessFinancials,
+    canAccessPeerFinancials,
     hasRemainingManager
 };

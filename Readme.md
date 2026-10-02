@@ -25,6 +25,9 @@ RoomSync is a lightweight web application that helps people living together mana
   - Role-based permissions (Owner, Admin, Member, Staff). Owners manage like
     admins; staff (chef, maid, caretaker) use meals, groceries, and shopping
     lists but are excluded from financials.
+- **Household Tasks**: Owners assign chores (cooking, cleaning, laundry, grocery runs, maintenance, security) to staff or members; assignees mark them done.
+- **Owner Oversight**: PG/flat owners get a dedicated home with occupancy, rent collection, dues owed to them, and task status — roommate-shared money stays between roommates.
+- **Owner MFA**: Owners must enroll a TOTP authenticator second factor; staff accounts can be provisioned by owners with a one-time temporary password.
   - Invite links and scannable QR codes for easy onboarding.
   - Configurable joining workflows (Direct Join vs Admin Approval for pending requests).
 - **Modern & Responsive UI**: Sleek landing page with animated horizontal sliders, glassmorphism design, and a fully mobile-optimized interface.

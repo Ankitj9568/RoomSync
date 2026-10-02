@@ -67,6 +67,9 @@ const navbarHTML = `
         <a class="nav-link" href="/pages/meals.html"><i class="bi bi-cup-hot me-3"></i> Meals</a>
       </li>
       <li class="nav-item">
+        <a class="nav-link" href="/pages/tasks.html"><i class="bi bi-list-task me-3"></i> Tasks</a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link" data-financial-link href="/pages/expenses.html"><i class="bi bi-receipt me-3"></i> Expenses</a>
       </li>
       <li class="nav-item">
@@ -285,10 +288,10 @@ function getActiveGroupRole() {
     }
 }
 
-// Staff (chef, maid) never see financial navigation; the backend enforces
-// the same restriction on every financial endpoint.
+// Staff (chef, maid) and owners never see roommate-shared financial
+// navigation; the backend enforces the same restriction on every endpoint.
 function applyRoleToNav(role) {
-    const hideFinancials = role === 'staff';
+    const hideFinancials = role === 'staff' || role === 'owner';
     document.querySelectorAll('[data-financial-link]').forEach(link => {
         link.classList.toggle('d-none', hideFinancials);
     });

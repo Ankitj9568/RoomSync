@@ -2,6 +2,9 @@ const request = require('supertest');
 // Auth contract tests use an in-memory repository so they do not require a
 // developer PostgreSQL instance. Prisma-backed database coverage belongs in
 // the deployment/integration suite with TEST_DATABASE_URL configured.
+jest.mock('../../models/groupModel', () => ({
+    getUserGroups: async () => []
+}));
 jest.mock('../../models/userModel', () => {
     const users = new Map();
     let nextId = 1;

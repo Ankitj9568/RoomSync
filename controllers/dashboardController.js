@@ -3,9 +3,11 @@ const GroceryModel = require('../models/groceryModel');
 const GroupModel = require('../models/groupModel');
 const MealModel = require('../models/mealModel');
 const MenuModel = require('../models/menuModel');
+const PaymentModel = require('../models/paymentModel');
+const TaskModel = require('../models/taskModel');
 const settlementCalculator = require('../utils/settlementCalculator');
 const { todayInTimeZone } = require('../utils/validation');
-const { canAccessFinancials } = require('../utils/roles');
+const { canManage, canAccessPeerFinancials } = require('../utils/roles');
 
 const dashboardController = {
     async getOverview(req, res) {
@@ -21,7 +23,7 @@ const dashboardController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
-            if (!canAccessFinancials(isMember.role)) {
+            if (!canAccessPeerFinancials(isMember.role)) {
                 return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
 
@@ -96,7 +98,7 @@ const dashboardController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
-            if (!canAccessFinancials(isMember.role)) {
+            if (!canAccessPeerFinancials(isMember.role)) {
                 return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
 
@@ -159,6 +161,79 @@ const dashboardController = {
             });
         } catch (error) {
             console.error('Get analytics error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
+    // PG-owner home: strictly PG-level matters (occupancy, rent collection,
+    // dues owed to the owner, assigned tasks). Roommate-to-roommate money
+    // (expense splits, peer debts, adjustments) is never included here.
+    async getOwnerOverview(req, res) {
+        try {
+            const { group_id } = req.query;
+            const userId = req.session.userId;
+
+            if (!group_id) {
+                return res.status(400).json({ success: false, message: 'group_id is required' });
+            }
+
+            const membership = await GroupModel.isMember(group_id, userId);
+            if (!membership) {
+                return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
+            }
+            if (!canManage(membership.role)) {
+                return res.status(403).json({ success: false, message: 'NOT_ADMIN' });
+            }
+
+            const [members, settlementData, payments, taskCounts] = await Promise.all([
+                GroupModel.getGroupMembers(group_id),
+                settlementCalculator.calculateBalances(group_id),
+                PaymentModel.getPaymentsByGroup(group_id),
+                TaskModel.getTaskCounts(group_id)
+            ]);
+
+            const byRole = {};
+            members.forEach(member => {
+                byRole[member.role] = (byRole[member.role] || 0) + 1;
+            });
+
+            // Only debts owed TO the owner — peer debts stay between roommates.
+            const duesToOwner = settlementData.debts
+                .filter(debt => Number(debt.to) === Number(userId))
+                .map(debt => {
+                    const from = members.find(m => Number(m.user_id) === Number(debt.from));
+                    return { from_id: debt.from, from_name: from ? from.name : 'Unknown', amount: debt.amount };
+                });
+
+            const currentMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }).format(new Date());
+            let rentCollected = 0;
+            let rentPending = 0;
+            payments.forEach(payment => {
+                if (Number(payment.paid_to) !== Number(userId)) return;
+                if (String(payment.payment_date).slice(0, 7) !== currentMonth) return;
+                if (payment.status === 'approved') rentCollected += Number(payment.amount);
+                else if (payment.status === 'pending') rentPending += Number(payment.amount);
+            });
+
+            const ownerPayments = payments
+                .filter(payment => Number(payment.paid_to) === Number(userId) || Number(payment.paid_by) === Number(userId))
+                .slice(0, 5);
+
+            res.json({
+                success: true,
+                data: {
+                    occupancy: { total: members.length, by_role: byRole },
+                    members: members.map(member => ({ user_id: member.user_id, name: member.name, role: member.role })),
+                    dues_to_owner: duesToOwner,
+                    total_dues_to_owner: duesToOwner.reduce((sum, debt) => sum + Number(debt.amount), 0),
+                    rent_collected_month: rentCollected,
+                    rent_pending_month: rentPending,
+                    tasks: taskCounts,
+                    recent_payments: ownerPayments
+                }
+            });
+        } catch (error) {
+            console.error('Get owner overview error:', error);
             res.status(500).json({ success: false, message: 'Server error' });
         }
     }

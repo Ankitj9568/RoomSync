@@ -3,7 +3,9 @@ const {
     isValidRole,
     normalizeRole,
     canManage,
+    isAdmin,
     canAccessFinancials,
+    canAccessPeerFinancials,
     hasRemainingManager
 } = require('../../utils/roles');
 
@@ -28,14 +30,20 @@ describe('group roles', () => {
         expect(canManage('member')).toBe(false);
         expect(canManage('staff')).toBe(false);
         expect(canManage('unknown')).toBe(false);
+        expect(isAdmin('admin')).toBe(true);
+        expect(isAdmin('owner')).toBe(false);
     });
 
-    test('staff cannot access financials', () => {
+    test('staff cannot access financials, owners cannot access peer financials', () => {
         expect(canAccessFinancials('admin')).toBe(true);
         expect(canAccessFinancials('owner')).toBe(true);
         expect(canAccessFinancials('member')).toBe(true);
         expect(canAccessFinancials('staff')).toBe(false);
         expect(canAccessFinancials('unknown')).toBe(false);
+        expect(canAccessPeerFinancials('admin')).toBe(true);
+        expect(canAccessPeerFinancials('member')).toBe(true);
+        expect(canAccessPeerFinancials('owner')).toBe(false);
+        expect(canAccessPeerFinancials('staff')).toBe(false);
     });
 
     test('hasRemainingManager guards the last manager', () => {

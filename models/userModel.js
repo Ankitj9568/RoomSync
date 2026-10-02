@@ -52,6 +52,22 @@ const UserModel = {
         await prisma.user.update({ where: { userId: Number(userId) }, data: { passwordHash: newHash } });
     },
 
+    async getMfa(userId) {
+        const user = await prisma.user.findUnique({ where: { userId: Number(userId) } });
+        if (!user) return null;
+        return { totpSecret: user.totpSecret, mfaEnabled: Boolean(user.mfaEnabled) };
+    },
+
+    async setTotpSecret(userId, secret) {
+        await prisma.user.update({ where: { userId: Number(userId) }, data: { totpSecret: secret } });
+    },
+
+    async setMfaEnabled(userId, enabled) {
+        const data = { mfaEnabled: Boolean(enabled) };
+        if (!enabled) data.totpSecret = null;
+        await prisma.user.update({ where: { userId: Number(userId) }, data });
+    },
+
     async findOrCreateOAuthUser({ provider, providerAccountId, email, name, avatarUrl }) {
         const existingAccount = await prisma.oAuthAccount.findUnique({
             where: { provider_providerAccountId: { provider, providerAccountId } },

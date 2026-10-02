@@ -17,6 +17,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.success) {
+                    // PG/flat owners pass a second factor before entering.
+                    if (response.mfaRequired) {
+                        setUserId(response.data.user_id);
+                        document.getElementById('loginForm').classList.add('d-none');
+                        document.getElementById('mfaForm').classList.remove('d-none');
+                        document.getElementById('mfaCode').focus();
+                        return;
+                    }
+                    if (response.mfaSetupRequired) {
+                        setUserId(response.data.user_id);
+                        window.location.href = '/pages/settings.html#mfa';
+                        return;
+                    }
                     setUserId(response.data.user_id);
                     const urlParams = new URLSearchParams(window.location.search);
                     let returnTo = urlParams.get('returnTo');
@@ -72,6 +85,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 // Error shown by apiFetch
+            }
+        });
+    }
+
+    // Handle MFA challenge form (owner second factor)
+    const mfaForm = document.getElementById('mfaForm');
+    if (mfaForm) {
+        mfaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = document.getElementById('mfaCode').value;
+
+            try {
+                const response = await apiFetch('/api/auth/mfa/challenge', {
+                    method: 'POST',
+                    body: { token }
+                });
+
+                if (response.success) {
+                    window.location.href = '/pages/dashboard.html';
+                }
+            } catch (error) {
+                // apiFetch already shows error message
             }
         });
     }

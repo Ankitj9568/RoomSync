@@ -2,7 +2,7 @@ const PaymentModel = require('../models/paymentModel');
 const GroupModel = require('../models/groupModel');
 const settlementCalculator = require('../utils/settlementCalculator');
 const { isValidDate, isFutureDate, toCents } = require('../utils/validation');
-const { canAccessFinancials } = require('../utils/roles');
+const { canAccessPeerFinancials } = require('../utils/roles');
 
 const paymentController = {
     async getSettlements(req, res) {
@@ -18,7 +18,7 @@ const paymentController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
-            if (!canAccessFinancials(isMember.role)) {
+            if (!canAccessPeerFinancials(isMember.role)) {
                 return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
 
@@ -70,7 +70,7 @@ const paymentController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
-            if (!canAccessFinancials(isMember.role)) {
+            if (!canAccessPeerFinancials(isMember.role)) {
                 return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
 
@@ -109,7 +109,7 @@ const paymentController = {
             if (!isMember) {
                 return res.status(403).json({ success: false, message: 'NOT_A_MEMBER' });
             }
-            if (!canAccessFinancials(isMember.role)) {
+            if (!canAccessPeerFinancials(isMember.role)) {
                 return res.status(403).json({ success: false, message: 'FINANCIALS_RESTRICTED' });
             }
             if (!await GroupModel.isMember(group_id, paidTo)) {

@@ -57,6 +57,7 @@ const mealRoutes = require('./routes/mealRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adjustmentRoutes = require('./routes/adjustmentRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 const activityRoutes = require('./routes/activityRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const authMiddleware = require('./middleware/authMiddleware');
@@ -74,6 +75,7 @@ app.use('/api/meals', mealRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/adjustments', adjustmentRoutes);
+app.use('/api/tasks', taskRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.get('/api/health', async (req, res) => {
     try {

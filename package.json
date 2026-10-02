@@ -21,7 +21,10 @@
   "author": "",
   "license": "ISC",
   "jest": {
-    "testPathIgnorePatterns": ["/node_modules/", "/tests/e2e/"]
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/tests/e2e/"
+    ]
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",

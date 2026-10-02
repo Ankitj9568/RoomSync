@@ -51,6 +51,7 @@ router.post('/create', groupRateLimit, groupController.createGroup);
 router.post('/join', groupRateLimit, groupController.joinGroup);
 router.get('/members', groupController.getMembers);
 router.post('/members/add', groupController.addMemberDirectly);
+router.post('/members/provision', groupController.provisionStaffAccount);
 router.post('/members/remove', groupController.removeMember);
 router.get('/logs', groupController.getLogs);
 

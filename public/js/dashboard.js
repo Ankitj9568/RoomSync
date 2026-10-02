@@ -24,25 +24,39 @@ function requestDashboardData(force = false) {
 }
 
 async function loadDashboardData(groupId) {
+    // Role-specific homes: owners see PG oversight, staff see today's work,
+    // roommates see the shared financial dashboard.
+    const role = typeof getActiveGroupRole === 'function' ? getActiveGroupRole() : null;
+    const isOwner = role === 'owner';
+    const isStaff = role === 'staff';
+    document.getElementById('ownerHome').classList.toggle('d-none', !isOwner);
+    document.getElementById('staffHome').classList.toggle('d-none', !isStaff);
+    document.getElementById('memberHome').classList.toggle('d-none', isOwner || isStaff);
+    document.getElementById('memberQuickLinks').classList.toggle('d-none', isOwner || isStaff);
 
     try {
-        // Settled (not all-or-nothing) so staff members still see the group
-        // header and activity feed even though financials are restricted.
-        const [groupRes, dashRes, activityRes] = await Promise.allSettled([
-            apiFetch(`/api/groups/${groupId}`),
-            // Silent: a staff restriction renders as an inline notice below.
-            apiFetch(`/api/dashboard?group_id=${groupId}`, {}, true),
+        const groupRes = await apiFetch(`/api/groups/${groupId}`);
+        if (groupRes.success && groupRes.data) {
+            document.getElementById('groupNameHeader').textContent = groupRes.data.name + ' Dashboard';
+        }
+    } catch (error) {
+        console.error('Dashboard group load failed', error);
+    }
+
+    if (isOwner) return loadOwnerHome(groupId);
+    if (isStaff) return loadStaffHome(groupId);
+    return loadMemberDashboard(groupId);
+}
+
+async function loadMemberDashboard(groupId) {
+    try {
+        const [dashRes, activityRes] = await Promise.allSettled([
+            apiFetch(`/api/dashboard?group_id=${groupId}`),
             apiFetch(`/api/groups/${groupId}/activities`)
         ]);
 
-        if (groupRes.status === 'fulfilled' && groupRes.value.success && groupRes.value.data) {
-            document.getElementById('groupNameHeader').textContent = groupRes.value.data.name + ' Dashboard';
-        }
-
         if (dashRes.status === 'fulfilled' && dashRes.value.success && dashRes.value.data) {
             renderDashboardOverview(dashRes.value.data);
-        } else if (dashRes.status === 'rejected' && String(dashRes.reason && dashRes.reason.message).includes('FINANCIALS_RESTRICTED')) {
-            renderStaffNotice();
         }
 
         if (activityRes.status === 'fulfilled' && activityRes.value.success && activityRes.value.data) {
@@ -54,9 +68,82 @@ async function loadDashboardData(groupId) {
     }
 }
 
-function renderStaffNotice() {
-    const balanceTextEl = document.getElementById('dashBalanceText');
-    if (balanceTextEl) balanceTextEl.textContent = 'Staff accounts show household tasks, not financials. Use Meals and Shopping List from the menu.';
+async function loadOwnerHome(groupId) {
+    try {
+        const res = await apiFetch(`/api/dashboard/owner?group_id=${groupId}`);
+        if (!res.success || !res.data) return;
+        const data = res.data;
+
+        document.getElementById('ownerOccupancy').textContent = data.occupancy.total;
+        const roles = Object.entries(data.occupancy.by_role || {}).map(([role, count]) => `${count} ${role}`).join(' · ');
+        document.getElementById('ownerOccupancySub').textContent = roles || 'members';
+
+        document.getElementById('ownerDues').textContent = `₹ ${Number(data.total_dues_to_owner || 0).toFixed(0)}`;
+        document.getElementById('ownerDuesSub').textContent = data.dues_to_owner.length
+            ? data.dues_to_owner.map(d => `${esc(d.from_name)}: ₹ ${Number(d.amount).toFixed(0)}`).join(', ')
+            : 'no pending dues';
+
+        document.getElementById('ownerRent').textContent = `₹ ${Number(data.rent_collected_month || 0).toFixed(0)}`;
+        document.getElementById('ownerRentSub').textContent = `₹ ${Number(data.rent_pending_month || 0).toFixed(0)} awaiting approval`;
+
+        document.getElementById('ownerTasks').innerHTML =
+            `<span class="fw-bold text-warning">${data.tasks.pending}</span> pending · <span class="fw-bold text-success">${data.tasks.done}</span> done`;
+
+        const paymentsEl = document.getElementById('ownerPayments');
+        if (!data.recent_payments.length) {
+            paymentsEl.innerHTML = '<div class="text-muted small">No payments yet.</div>';
+        } else {
+            paymentsEl.innerHTML = data.recent_payments.map(p =>
+                `<div class="d-flex justify-content-between small border-bottom py-1">
+                    <span>${esc(p.paid_by_name)} → ${esc(p.paid_to_name)}</span>
+                    <span class="fw-medium">₹ ${Number(p.amount).toFixed(0)} <span class="badge bg-secondary ms-1">${esc(p.status)}</span></span>
+                </div>`
+            ).join('');
+        }
+    } catch (error) {
+        console.error('Owner home load failed', error);
+    }
+}
+
+async function loadStaffHome(groupId) {
+    try {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const [tasksRes, mealsRes] = await Promise.allSettled([
+            apiFetch(`/api/tasks?group_id=${groupId}&assigned_to=me&status=pending`, {}, true),
+            apiFetch(`/api/meals?group_id=${groupId}&date=${dateStr}`, {}, true)
+        ]);
+
+        const tasksEl = document.getElementById('staffTasks');
+        if (tasksRes.status === 'fulfilled' && tasksRes.value.success) {
+            const tasks = tasksRes.value.data || [];
+            tasksEl.innerHTML = tasks.length
+                ? tasks.slice(0, 5).map(t =>
+                    `<div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                        <span class="small">${esc(t.title)} <span class="badge bg-secondary ms-1">${esc(t.category)}</span></span>
+                        <button class="btn btn-sm btn-outline-success" onclick="completeStaffTask(${t.task_id})">Done</button>
+                    </div>`).join('') + (tasks.length > 5 ? `<div class="small text-muted mt-1">+${tasks.length - 5} more</div>` : '')
+                : '<div class="text-muted small">No pending tasks. Enjoy the day!</div>';
+        }
+
+        const headEl = document.getElementById('staffHeadcount');
+        if (mealsRes.status === 'fulfilled' && mealsRes.value.success) {
+            const meals = mealsRes.value.data || [];
+            const lunch = meals.filter(m => m.meal_type === 'lunch' && m.is_attending).reduce((n, m) => n + 1 + Number(m.guest_count || 0), 0);
+            const dinner = meals.filter(m => m.meal_type === 'dinner' && m.is_attending).reduce((n, m) => n + 1 + Number(m.guest_count || 0), 0);
+            headEl.innerHTML = `<div>Lunch plates: <strong>${lunch}</strong></div><div>Dinner plates: <strong>${dinner}</strong></div>`;
+        }
+    } catch (error) {
+        console.error('Staff home load failed', error);
+    }
+}
+
+async function completeStaffTask(taskId) {
+    try {
+        await apiFetch(`/api/tasks/${taskId}/status`, { method: 'PATCH', body: { status: 'done' } });
+        requestDashboardData(true);
+    } catch (error) {
+        alert(error.message || 'Failed to complete task');
+    }
 }
 
 function renderDashboardOverview(data) {
