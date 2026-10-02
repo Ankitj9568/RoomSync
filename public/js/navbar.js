@@ -143,8 +143,23 @@ document.addEventListener("DOMContentLoaded", () => {
         if (link.getAttribute('href') === currentPath) {
             link.classList.add('active');
             link.classList.remove('text-secondary');
+            link.setAttribute('aria-current', 'page');
         } else {
             link.classList.add('text-secondary');
+        }
+
+        // Explicitly close the mobile drawer before navigation. The normal
+        // anchor behavior is intentionally preserved so this works with
+        // keyboard, mouse, and touch input across Bootstrap breakpoints.
+        if (link.id !== 'logoutBtn') {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    const drawer = document.getElementById('sidebarOffcanvas');
+                    if (drawer && window.bootstrap && window.bootstrap.Offcanvas) {
+                        window.bootstrap.Offcanvas.getOrCreateInstance(drawer).hide();
+                    }
+                }
+            });
         }
     });
 
