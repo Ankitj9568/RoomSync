@@ -13,7 +13,7 @@ const roomSyncLogo = `
 const navbarHTML = `
 <!-- Mobile Header (Hidden on Desktop) -->
 <div class="mobile-app-header d-lg-none bg-surface shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
-  <a class="navbar-brand d-flex align-items-center text-decoration-none mb-0" href="/pages/dashboard.html">
+  <a class="navbar-brand d-flex align-items-center text-decoration-none mb-0" href="/" aria-label="RoomSync home">
       ${roomSyncLogo}
       <span class="fs-4 fw-bold text-primary-custom">RoomSync</span>
   </a>
@@ -32,7 +32,7 @@ const navbarHTML = `
   
   <!-- Offcanvas Header for Mobile -->
   <div class="offcanvas-header d-lg-none p-3 border-bottom">
-    <a class="navbar-brand d-flex align-items-center text-decoration-none" href="/pages/dashboard.html">
+    <a class="navbar-brand d-flex align-items-center text-decoration-none" href="/" aria-label="RoomSync home">
         ${roomSyncLogo}
         <span class="fs-4 fw-bold text-primary-custom">RoomSync</span>
     </a>
@@ -41,7 +41,7 @@ const navbarHTML = `
 
   <!-- Header for Desktop -->
   <div class="offcanvas-header d-none d-lg-flex p-4 pb-2 border-bottom-0">
-      <a class="navbar-brand d-flex align-items-center text-decoration-none w-100" href="/pages/dashboard.html">
+      <a class="navbar-brand d-flex align-items-center text-decoration-none w-100" href="/" aria-label="RoomSync home">
           ${roomSyncLogo}
           <span class="fs-4 fw-bold text-primary-custom">RoomSync</span>
       </a>
