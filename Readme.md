@@ -97,21 +97,6 @@ roomsync/
 
 ---
 
-## Installation & Setup
-
-This is a personal deployment — just use the live link above. The environment
-configuration is managed privately and is not published in this repository.
-
-```bash
-git clone https://github.com/Ankitj9568/RoomSync.git
-cd RoomSync
-npm install
-npm start
-```
-
-(A local `.env` with private credentials is required to run it; see the
-repository owner.)
-
 ---
 
 ## REST API
